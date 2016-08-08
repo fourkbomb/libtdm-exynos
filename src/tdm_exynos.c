@@ -268,7 +268,7 @@ tdm_exynos_init(tdm_display *dpy, tdm_error *error)
 	LIST_INITHEAD(&exynos_data->buffer_list);
 
 	memset(&exynos_func_display, 0, sizeof(exynos_func_display));
-	exynos_func_display.display_get_capabilitiy = exynos_display_get_capabilitiy;
+	exynos_func_display.display_get_capability = exynos_display_get_capability;
 	exynos_func_display.display_get_pp_capability = exynos_display_get_pp_capability;
 	exynos_func_display.display_get_outputs = exynos_display_get_outputs;
 	exynos_func_display.display_get_fd = exynos_display_get_fd;

@@ -628,7 +628,7 @@ tdm_exynos_display_find_buffer(tdm_exynos_data *exynos_data,
 }
 
 tdm_error
-exynos_display_get_capabilitiy(tdm_backend_data *bdata, tdm_caps_display *caps)
+exynos_display_get_capability(tdm_backend_data *bdata, tdm_caps_display *caps)
 {
 	RETURN_VAL_IF_FAIL(caps, TDM_ERROR_INVALID_PARAMETER);
 

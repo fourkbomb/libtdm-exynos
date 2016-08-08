@@ -30,7 +30,7 @@
 #include "tdm_exynos_pp.h"
 
 /* exynos backend functions */
-tdm_error    exynos_display_get_capabilitiy(tdm_backend_data *bdata, tdm_caps_display *caps);
+tdm_error    exynos_display_get_capability(tdm_backend_data *bdata, tdm_caps_display *caps);
 tdm_error    exynos_display_get_pp_capability(tdm_backend_data *bdata, tdm_caps_pp *caps);
 tdm_output** exynos_display_get_outputs(tdm_backend_data *bdata, int *count, tdm_error *error);
 tdm_error    exynos_display_get_fd(tdm_backend_data *bdata, int *fd);
