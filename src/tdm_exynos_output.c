@@ -251,10 +251,8 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 			TDM_ERR("set crtc failed: %m");
 			return TDM_ERROR_OPERATION_FAILED;
 		}
-		output_data->status = TDM_OUTPUT_CONN_STATUS_MODE_SETTED;
-		if (output_data->status_func)
-			output_data->status_func(output_data, output_data->status,
-									 output_data->status_user_data);
+
+		tdm_exynos_output_update_status(output_data, TDM_OUTPUT_CONN_STATUS_MODE_SETTED);
 
 		*do_waitvblank = 1;
 		return TDM_ERROR_NONE;
@@ -271,10 +269,8 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 				return TDM_ERROR_OPERATION_FAILED;
 			}
 
-			output_data->status = TDM_OUTPUT_CONN_STATUS_CONNECTED;
-			if (output_data->status_func)
-				output_data->status_func(output_data, output_data->status,
-										 output_data->status_user_data);
+			if (output_data->status == TDM_OUTPUT_CONN_STATUS_MODE_SETTED)
+				tdm_exynos_output_update_status(output_data, TDM_OUTPUT_CONN_STATUS_CONNECTED);
 
 			*do_waitvblank = 1;
 		} else {
