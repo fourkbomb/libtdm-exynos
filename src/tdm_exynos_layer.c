@@ -87,7 +87,7 @@ exynos_layer_get_capability(tdm_layer *layer, tdm_caps_layer *caps)
 	}
 
 	props = drmModeObjectGetProperties(exynos_data->drm_fd, layer_data->plane_id,
-	                                   DRM_MODE_OBJECT_PLANE);
+									   DRM_MODE_OBJECT_PLANE);
 	if (!props) {
 		ret = TDM_ERROR_OPERATION_FAILED;
 		TDM_ERR("get plane properties failed: %m\n");
@@ -104,7 +104,7 @@ exynos_layer_get_capability(tdm_layer *layer, tdm_caps_layer *caps)
 	caps->prop_count = 0;
 	for (i = 0; i < props->count_props; i++) {
 		drmModePropertyPtr prop = drmModeGetProperty(exynos_data->drm_fd,
-		                          props->props[i]);
+													 props->props[i]);
 		if (!prop)
 			continue;
 		if (!strncmp(prop->name, "type", TDM_NAME_LEN))
@@ -142,8 +142,8 @@ exynos_layer_set_property(tdm_layer *layer, unsigned int id, tdm_value value)
 
 	exynos_data = layer_data->exynos_data;
 	ret = drmModeObjectSetProperty(exynos_data->drm_fd,
-	                               layer_data->plane_id, DRM_MODE_OBJECT_PLANE,
-	                               id, value.u32);
+								   layer_data->plane_id, DRM_MODE_OBJECT_PLANE,
+								   id, value.u32);
 	if (ret < 0) {
 		TDM_ERR("set property failed: %m");
 		return TDM_ERROR_OPERATION_FAILED;
@@ -166,7 +166,7 @@ exynos_layer_get_property(tdm_layer *layer, unsigned int id, tdm_value *value)
 
 	exynos_data = layer_data->exynos_data;
 	props = drmModeObjectGetProperties(exynos_data->drm_fd, layer_data->plane_id,
-	                                   DRM_MODE_OBJECT_PLANE);
+									   DRM_MODE_OBJECT_PLANE);
 	if (props == NULL) {
 		TDM_ERR("get property failed: %m");
 		return TDM_ERROR_OPERATION_FAILED;
@@ -233,8 +233,7 @@ exynos_layer_set_buffer(tdm_layer *layer, tbm_surface_h buffer)
 		}
 		display_buffer->buffer = buffer;
 
-		err = tdm_buffer_add_destroy_handler(buffer,
-		                                     _tdm_exynos_layer_cb_destroy_buffer, exynos_data);
+		err = tdm_buffer_add_destroy_handler(buffer, _tdm_exynos_layer_cb_destroy_buffer, exynos_data);
 		if (err != TDM_ERROR_NONE) {
 			TDM_ERR("add destroy handler fail");
 			free(display_buffer);
@@ -266,18 +265,17 @@ exynos_layer_set_buffer(tdm_layer *layer, tbm_surface_h buffer)
 			tbm_surface_internal_get_plane_data(buffer, i, &size, &offsets[i], &pitches[i]);
 
 		TDM_DBG("AddFB2: drm_fd(%d) size(%dx%d) format(%c%c%c%c) handles(%d,%d,%d) pitches(%d,%d,%d) offsets(%d,%d,%d) buffer(%p)",
-		        exynos_data->drm_fd, width, height, FOURCC_STR(format), handles[0], handles[1],
-		        handles[2],
-		        pitches[0], pitches[1], pitches[2], offsets[0], offsets[1], offsets[2], buffer);
+				exynos_data->drm_fd, width, height, FOURCC_STR(format), handles[0], handles[1], handles[2],
+				pitches[0], pitches[1], pitches[2], offsets[0], offsets[1], offsets[2], buffer);
 
 		ret = drmModeAddFB2(exynos_data->drm_fd, width, height, format,
-		                    handles, pitches, offsets, &display_buffer->fb_id, 0);
+							handles, pitches, offsets, &display_buffer->fb_id, 0);
 		if (ret < 0) {
 			TDM_ERR("add fb failed: %m");
 			return TDM_ERROR_OPERATION_FAILED;
 		}
 		TDM_DBG("exynos_data->drm_fd : %d, display_buffer->fb_id:%u",
-		        exynos_data->drm_fd, display_buffer->fb_id);
+				exynos_data->drm_fd, display_buffer->fb_id);
 
 		if (IS_RGB(format))
 			display_buffer->width = pitches[0] >> 2;

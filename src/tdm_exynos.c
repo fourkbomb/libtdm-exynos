@@ -40,9 +40,8 @@ _tdm_exynos_udev_fd_handler(int fd, tdm_event_loop_mask mask, void *user_data)
 
 	hotplug = udev_device_get_property_value(dev, "HOTPLUG");
 
-	if (memcmp(&s.st_rdev, &udev_devnum, sizeof (dev_t)) == 0 &&
-	        hotplug && atoi(hotplug) == 1)
-	{
+	if (memcmp(&s.st_rdev, &udev_devnum, sizeof(dev_t)) == 0 &&
+			   hotplug && atoi(hotplug) == 1) {
 		TDM_INFO("HotPlug");
 		tdm_exynos_display_update_output_status(edata);
 	}
@@ -78,9 +77,9 @@ _tdm_exynos_udev_init(tdm_exynos_data *edata)
 
 	edata->uevent_source =
 		tdm_event_loop_add_fd_handler(edata->dpy, udev_monitor_get_fd(mon),
-		                              TDM_EVENT_LOOP_READABLE,
-		                              _tdm_exynos_udev_fd_handler,
-		                              edata, NULL);
+									  TDM_EVENT_LOOP_READABLE,
+									  _tdm_exynos_udev_fd_handler,
+									  edata, NULL);
 	if (!edata->uevent_source) {
 		TDM_ERR("couldn't create udev event source");
 		goto failed;
@@ -122,9 +121,8 @@ _tdm_exynos_open_drm(void)
 	int fd = -1;
 
 	fd = drmOpen(EXYNOS_DRM_NAME, NULL);
-	if (fd < 0) {
+	if (fd < 0)
 		TDM_ERR("Cannot open '%s' drm", EXYNOS_DRM_NAME);
-	}
 
 #ifdef HAVE_UDEV
 	if (fd < 0) {
@@ -150,16 +148,15 @@ _tdm_exynos_open_drm(void)
 		drm_device = NULL;
 		udev_list_entry_foreach(entry, udev_enumerate_get_list_entry(e)) {
 			device = udev_device_new_from_syspath(udev_enumerate_get_udev(e),
-			                                      udev_list_entry_get_name
-			                                      (entry));
+												  udev_list_entry_get_name(entry));
 			device_parent = udev_device_get_parent(device);
 			/* Not need unref device_parent. device_parent and device have same refcnt */
 			if (device_parent) {
 				if (strcmp(udev_device_get_sysname(device_parent), "exynos-drm") == 0) {
 					drm_device = device;
 					TDM_DBG("Found drm device: '%s' (%s)\n",
-					        udev_device_get_syspath(drm_device),
-					        udev_device_get_sysname(device_parent));
+							udev_device_get_syspath(drm_device),
+							udev_device_get_sysname(device_parent));
 					break;
 				}
 			}
@@ -176,9 +173,8 @@ _tdm_exynos_open_drm(void)
 		filename = udev_device_get_devnode(drm_device);
 
 		fd = open(filename, O_RDWR | O_CLOEXEC);
-		if (fd < 0) {
+		if (fd < 0)
 			TDM_ERR("Cannot open drm device(%s)\n", filename);
-		}
 		udev_device_unref(drm_device);
 		udev_enumerate_unref(e);
 		udev_unref(udev);
@@ -201,7 +197,7 @@ _tdm_exynos_drm_user_handler(struct drm_event *event)
 	ipp = (struct drm_exynos_ipp_event *)event;
 
 	tdm_exynos_pp_handler(ipp->prop_id, ipp->buf_id, ipp->tv_sec, ipp->tv_usec,
-	                      (void *)(unsigned long)ipp->user_data);
+						  (void *)(unsigned long)ipp->user_data);
 
 	return 0;
 }
@@ -351,8 +347,7 @@ tdm_exynos_init(tdm_display *dpy, tdm_error *error)
 
 	drmAddUserHandler(exynos_data->drm_fd, _tdm_exynos_drm_user_handler);
 
-	if (drmSetClientCap(exynos_data->drm_fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES,
-	                    1) < 0)
+	if (drmSetClientCap(exynos_data->drm_fd, DRM_CLIENT_CAP_UNIVERSAL_PLANES, 1) < 0)
 		TDM_WRN("Set DRM_CLIENT_CAP_UNIVERSAL_PLANES failed");
 
 	exynos_data->mode_res = drmModeGetResources(exynos_data->drm_fd);
@@ -376,9 +371,9 @@ tdm_exynos_init(tdm_display *dpy, tdm_error *error)
 	}
 
 	ret = tdm_exynos_display_get_property(exynos_data,
-	                                      exynos_data->plane_res->planes[0],
-	                                      DRM_MODE_OBJECT_PLANE, "zpos", NULL,
-	                                      &exynos_data->is_immutable_zpos);
+										  exynos_data->plane_res->planes[0],
+										  DRM_MODE_OBJECT_PLANE, "zpos", NULL,
+										  &exynos_data->is_immutable_zpos);
 	if (ret == TDM_ERROR_NONE) {
 		exynos_data->has_zpos_info = 1;
 		if (exynos_data->is_immutable_zpos)

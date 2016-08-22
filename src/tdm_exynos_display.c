@@ -27,11 +27,11 @@ _tdm_exynos_display_create_layer_list_type(tdm_exynos_data *exynos_data)
 		}
 
 		ret = tdm_exynos_display_get_property(exynos_data,
-		                                      exynos_data->plane_res->planes[i],
-		                                      DRM_MODE_OBJECT_PLANE, "type", &type, NULL);
+											  exynos_data->plane_res->planes[i],
+											  DRM_MODE_OBJECT_PLANE, "type", &type, NULL);
 		if (ret != TDM_ERROR_NONE) {
 			TDM_ERR("plane(%d) doesn't have 'type' info",
-			        exynos_data->plane_res->planes[i]);
+					exynos_data->plane_res->planes[i]);
 			drmModeFreePlane(plane);
 			continue;
 		}
@@ -61,20 +61,20 @@ _tdm_exynos_display_create_layer_list_type(tdm_exynos_data *exynos_data)
 
 		if (type == DRM_PLANE_TYPE_CURSOR) {
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_CURSOR |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC;
+									   TDM_LAYER_CAPABILITY_GRAPHIC;
 			layer_data->zpos = 2;
 		} else if (type == DRM_PLANE_TYPE_OVERLAY) {
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_OVERLAY |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC;
+									   TDM_LAYER_CAPABILITY_GRAPHIC;
 			layer_data->zpos = 1;
 		} else if (type == DRM_PLANE_TYPE_PRIMARY) {
 #ifdef _F_WEARABLE_PROFILE_
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_PRIMARY |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC |
-			                           TDM_LAYER_CAPABILITY_RESEVED_MEMORY;
+									   TDM_LAYER_CAPABILITY_GRAPHIC |
+									   TDM_LAYER_CAPABILITY_RESEVED_MEMORY;
 #else
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_PRIMARY |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC;
+									   TDM_LAYER_CAPABILITY_GRAPHIC;
 #endif
 			layer_data->zpos = 0;
 			output_data->primary_layer = layer_data;
@@ -85,8 +85,8 @@ _tdm_exynos_display_create_layer_list_type(tdm_exynos_data *exynos_data)
 		}
 
 		TDM_DBG("layer_data(%p) plane_id(%d) crtc_id(%d) zpos(%d) capabilities(%x)",
-		        layer_data, layer_data->plane_id, layer_data->output_data->crtc_id,
-		        layer_data->zpos, layer_data->capabilities);
+				layer_data, layer_data->plane_id, layer_data->output_data->crtc_id,
+				layer_data->zpos, layer_data->capabilities);
 
 		LIST_ADDTAIL(&layer_data->link, &output_data->layer_list);
 
@@ -97,8 +97,7 @@ _tdm_exynos_display_create_layer_list_type(tdm_exynos_data *exynos_data)
 }
 
 static tdm_error
-_tdm_exynos_display_create_layer_list_immutable_zpos(tdm_exynos_data
-                *exynos_data)
+_tdm_exynos_display_create_layer_list_immutable_zpos(tdm_exynos_data *exynos_data)
 {
 	tdm_error ret;
 	int i;
@@ -116,21 +115,21 @@ _tdm_exynos_display_create_layer_list_immutable_zpos(tdm_exynos_data
 		}
 
 		ret = tdm_exynos_display_get_property(exynos_data,
-		                                      exynos_data->plane_res->planes[i],
-		                                      DRM_MODE_OBJECT_PLANE, "type", &type, NULL);
+											  exynos_data->plane_res->planes[i],
+											  DRM_MODE_OBJECT_PLANE, "type", &type, NULL);
 		if (ret != TDM_ERROR_NONE) {
 			TDM_ERR("plane(%d) doesn't have 'type' info",
-			        exynos_data->plane_res->planes[i]);
+					exynos_data->plane_res->planes[i]);
 			drmModeFreePlane(plane);
 			continue;
 		}
 
 		ret = tdm_exynos_display_get_property(exynos_data,
-		                                      exynos_data->plane_res->planes[i],
-		                                      DRM_MODE_OBJECT_PLANE, "zpos", &zpos, NULL);
+											  exynos_data->plane_res->planes[i],
+											  DRM_MODE_OBJECT_PLANE, "zpos", &zpos, NULL);
 		if (ret != TDM_ERROR_NONE) {
 			TDM_ERR("plane(%d) doesn't have 'zpos' info",
-			        exynos_data->plane_res->planes[i]);
+					exynos_data->plane_res->planes[i]);
 			drmModeFreePlane(plane);
 			continue;
 		}
@@ -161,18 +160,18 @@ _tdm_exynos_display_create_layer_list_immutable_zpos(tdm_exynos_data
 
 		if (type == DRM_PLANE_TYPE_CURSOR)
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_CURSOR |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC;
+									   TDM_LAYER_CAPABILITY_GRAPHIC;
 		else if (type == DRM_PLANE_TYPE_OVERLAY)
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_OVERLAY |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC;
+									   TDM_LAYER_CAPABILITY_GRAPHIC;
 		else if (type == DRM_PLANE_TYPE_PRIMARY) {
 #ifdef _F_WEARABLE_PROFILE_
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_PRIMARY |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC |
-			                           TDM_LAYER_CAPABILITY_RESEVED_MEMORY;
+									   TDM_LAYER_CAPABILITY_GRAPHIC |
+									   TDM_LAYER_CAPABILITY_RESEVED_MEMORY;
 #else
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_PRIMARY |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC;
+									   TDM_LAYER_CAPABILITY_GRAPHIC;
 #endif
 			output_data->primary_layer = layer_data;
 		} else {
@@ -182,8 +181,8 @@ _tdm_exynos_display_create_layer_list_immutable_zpos(tdm_exynos_data
 		}
 
 		TDM_DBG("layer_data(%p) plane_id(%d) crtc_id(%d) zpos(%d) capabilities(%x)",
-		        layer_data, layer_data->plane_id, layer_data->output_data->crtc_id,
-		        layer_data->zpos, layer_data->capabilities);
+				layer_data, layer_data->plane_id, layer_data->output_data->crtc_id,
+				layer_data->zpos, layer_data->capabilities);
 
 		LIST_ADDTAIL(&layer_data->link, &output_data->layer_list);
 
@@ -252,21 +251,21 @@ _tdm_exynos_display_create_layer_list_not_fixed(tdm_exynos_data *exynos_data)
 		if (layer_data->zpos == 0) {
 #ifdef _F_WEARABLE_PROFILE_
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_PRIMARY |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC |
-			                           TDM_LAYER_CAPABILITY_RESEVED_MEMORY;
+									   TDM_LAYER_CAPABILITY_GRAPHIC |
+									   TDM_LAYER_CAPABILITY_RESEVED_MEMORY;
 #else
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_PRIMARY |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC;
+									   TDM_LAYER_CAPABILITY_GRAPHIC;
 #endif
 			output_data->primary_layer = layer_data;
 		} else {
 			tdm_error ret;
 
 			layer_data->capabilities = TDM_LAYER_CAPABILITY_OVERLAY |
-			                           TDM_LAYER_CAPABILITY_GRAPHIC;
+									   TDM_LAYER_CAPABILITY_GRAPHIC;
 
 			ret = tdm_exynos_display_set_property(exynos_data, layer_data->plane_id,
-			                                      DRM_MODE_OBJECT_PLANE, "zpos", layer_data->zpos);
+												  DRM_MODE_OBJECT_PLANE, "zpos", layer_data->zpos);
 			if (ret != TDM_ERROR_NONE) {
 				drmModeFreePlane(plane);
 				free(layer_data);
@@ -275,8 +274,8 @@ _tdm_exynos_display_create_layer_list_not_fixed(tdm_exynos_data *exynos_data)
 		}
 
 		TDM_DBG("layer_data(%p) plane_id(%d) crtc_id(%d) zpos(%d) capabilities(%x)",
-		        layer_data, layer_data->plane_id, layer_data->output_data->crtc_id,
-		        layer_data->zpos, layer_data->capabilities);
+				layer_data, layer_data->plane_id, layer_data->output_data->crtc_id,
+				layer_data->zpos, layer_data->capabilities);
 
 		LIST_ADDTAIL(&layer_data->link, &output_data->layer_list);
 
@@ -288,7 +287,7 @@ _tdm_exynos_display_create_layer_list_not_fixed(tdm_exynos_data *exynos_data)
 
 void
 tdm_exynos_display_to_tdm_mode(drmModeModeInfoPtr drm_mode,
-                                tdm_output_mode *tdm_mode)
+										tdm_output_mode *tdm_mode)
 {
 	tdm_mode->clock = drm_mode->clock;
 	tdm_mode->hdisplay = drm_mode->hdisplay;
@@ -369,7 +368,7 @@ tdm_exynos_display_update_output_status(tdm_exynos_data *exynos_data)
 		tdm_output_conn_status new_status;
 
 		connector = drmModeGetConnector(exynos_data->drm_fd,
-		                                output_data->connector_id);
+										output_data->connector_id);
 		if (!connector) {
 			TDM_ERR("no connector: %d", output_data->connector_id);
 			continue;
@@ -395,7 +394,7 @@ tdm_exynos_display_create_output_list(tdm_exynos_data *exynos_data)
 	int allocated = 0;
 
 	RETURN_VAL_IF_FAIL(LIST_IS_EMPTY(&exynos_data->output_list),
-	                   TDM_ERROR_OPERATION_FAILED);
+					   TDM_ERROR_OPERATION_FAILED);
 
 	for (i = 0; i < exynos_data->mode_res->count_connectors; i++) {
 		drmModeConnectorPtr connector;
@@ -403,7 +402,7 @@ tdm_exynos_display_create_output_list(tdm_exynos_data *exynos_data)
 		int crtc_id = 0, c, j;
 
 		connector = drmModeGetConnector(exynos_data->drm_fd,
-		                                exynos_data->mode_res->connectors[i]);
+										exynos_data->mode_res->connectors[i]);
 		if (!connector) {
 			TDM_ERR("no connector");
 			ret = TDM_ERROR_OPERATION_FAILED;
@@ -470,7 +469,7 @@ tdm_exynos_display_create_output_list(tdm_exynos_data *exynos_data)
 
 		for (j = 0; j < connector->count_props; j++) {
 			drmModePropertyPtr prop = drmModeGetProperty(exynos_data->drm_fd,
-			                          connector->props[j]);
+														 connector->props[j]);
 			if (!prop)
 				continue;
 			if (!strcmp(prop->name, "DPMS")) {
@@ -482,8 +481,7 @@ tdm_exynos_display_create_output_list(tdm_exynos_data *exynos_data)
 		}
 
 		output_data->count_modes = connector->count_modes;
-		output_data->drm_modes = calloc(connector->count_modes,
-		                                sizeof(drmModeModeInfo));
+		output_data->drm_modes = calloc(connector->count_modes, sizeof(drmModeModeInfo));
 		if (!output_data->drm_modes) {
 			TDM_ERR("alloc failed");
 			free(output_data);
@@ -492,8 +490,7 @@ tdm_exynos_display_create_output_list(tdm_exynos_data *exynos_data)
 			ret = TDM_ERROR_OUT_OF_MEMORY;
 			goto failed_create;
 		}
-		output_data->output_modes = calloc(connector->count_modes,
-		                                   sizeof(tdm_output_mode));
+		output_data->output_modes = calloc(connector->count_modes, sizeof(tdm_output_mode));
 		if (!output_data->output_modes) {
 			TDM_ERR("alloc failed");
 			free(output_data->drm_modes);
@@ -506,16 +503,16 @@ tdm_exynos_display_create_output_list(tdm_exynos_data *exynos_data)
 		for (j = 0; j < connector->count_modes; j++) {
 			output_data->drm_modes[j] = connector->modes[j];
 			tdm_exynos_display_to_tdm_mode(&output_data->drm_modes[j],
-			                                &output_data->output_modes[j]);
+										   &output_data->output_modes[j]);
 		}
 
 		LIST_ADDTAIL(&output_data->link, &exynos_data->output_list);
 
 		TDM_DBG("output_data(%p) connector_id(%d:%d:%d-%d) encoder_id(%d) crtc_id(%d) pipe(%d) dpms_id(%d)",
-		        output_data, output_data->connector_id, output_data->status,
-		        output_data->connector_type,
-		        output_data->connector_type_id, output_data->encoder_id, output_data->crtc_id,
-		        output_data->pipe, output_data->dpms_prop_id);
+				output_data, output_data->connector_id, output_data->status,
+				output_data->connector_type,
+				output_data->connector_type_id, output_data->encoder_id, output_data->crtc_id,
+				output_data->pipe, output_data->dpms_prop_id);
 
 		drmModeFreeEncoder(encoder);
 		drmModeFreeConnector(connector);
@@ -531,8 +528,8 @@ failed_create:
 
 tdm_error
 tdm_exynos_display_set_property(tdm_exynos_data *exynos_data,
-                                unsigned int obj_id, unsigned int obj_type,
-                                const char *name, unsigned int value)
+									   unsigned int obj_id, unsigned int obj_type,
+									   const char *name, unsigned int value)
 {
 	drmModeObjectPropertiesPtr props = NULL;
 	unsigned int i;
@@ -544,7 +541,7 @@ tdm_exynos_display_set_property(tdm_exynos_data *exynos_data,
 	}
 	for (i = 0; i < props->count_props; i++) {
 		drmModePropertyPtr prop = drmModeGetProperty(exynos_data->drm_fd,
-		                          props->props[i]);
+													 props->props[i]);
 		int ret;
 		if (!prop) {
 			TDM_ERR("drmModeGetProperty failed: %m");
@@ -553,7 +550,7 @@ tdm_exynos_display_set_property(tdm_exynos_data *exynos_data,
 		}
 		if (!strcmp(prop->name, name)) {
 			ret = drmModeObjectSetProperty(exynos_data->drm_fd, obj_id, obj_type,
-			                               prop->prop_id, value);
+										   prop->prop_id, value);
 			if (ret < 0) {
 				TDM_ERR("drmModeObjectSetProperty failed: %m");
 				drmModeFreeProperty(prop);
@@ -579,8 +576,8 @@ tdm_exynos_display_set_property(tdm_exynos_data *exynos_data,
 
 tdm_error
 tdm_exynos_display_get_property(tdm_exynos_data *exynos_data,
-                                unsigned int obj_id, unsigned int obj_type,
-                                const char *name, unsigned int *value, int *is_immutable)
+									   unsigned int obj_id, unsigned int obj_type,
+									   const char *name, unsigned int *value, int *is_immutable)
 {
 	drmModeObjectPropertiesPtr props = NULL;
 	int i;
@@ -591,7 +588,7 @@ tdm_exynos_display_get_property(tdm_exynos_data *exynos_data,
 
 	for (i = 0; i < props->count_props; i++) {
 		drmModePropertyPtr prop = drmModeGetProperty(exynos_data->drm_fd,
-		                          props->props[i]);
+													 props->props[i]);
 
 		if (!prop)
 			continue;
@@ -615,7 +612,7 @@ tdm_exynos_display_get_property(tdm_exynos_data *exynos_data,
 
 tdm_exynos_display_buffer *
 tdm_exynos_display_find_buffer(tdm_exynos_data *exynos_data,
-                               tbm_surface_h buffer)
+									 tbm_surface_h buffer)
 {
 	tdm_exynos_display_buffer *display_buffer = NULL;
 
@@ -645,7 +642,7 @@ exynos_display_get_pp_capability(tdm_backend_data *bdata, tdm_caps_pp *caps)
 
 tdm_output **
 exynos_display_get_outputs(tdm_backend_data *bdata, int *count,
-                           tdm_error *error)
+								 tdm_error *error)
 {
 	tdm_exynos_data *exynos_data = bdata;
 	tdm_exynos_output_data *output_data = NULL;

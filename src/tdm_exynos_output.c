@@ -10,11 +10,11 @@
 
 static tdm_error
 check_hw_restriction_crtc(unsigned int crtc_w,
-                          unsigned int buf_w, unsigned int buf_h,
-                          unsigned int src_x, unsigned int src_y,
-                          unsigned int src_w, unsigned int src_h,
-                          unsigned int dst_w, unsigned int dst_h,
-                          unsigned int *new_x, unsigned int *new_y)
+							  unsigned int buf_w, unsigned int buf_h,
+							  unsigned int src_x, unsigned int src_y,
+							  unsigned int src_w, unsigned int src_h,
+							  unsigned int dst_w, unsigned int dst_h,
+							  unsigned int *new_x, unsigned int *new_y)
 {
 	int tmp;
 	int dx = 1, dy = 1;
@@ -30,7 +30,7 @@ check_hw_restriction_crtc(unsigned int crtc_w,
 
 	if (src_x + src_w > buf_w) {
 		tmp = src_x;
-		while(tmp + src_w != buf_w)
+		while (tmp + src_w != buf_w)
 			tmp -= dx;
 
 		changed_x = 1;
@@ -39,7 +39,7 @@ check_hw_restriction_crtc(unsigned int crtc_w,
 
 	if (src_y + src_h > buf_h) {
 		tmp = src_y;
-		while(tmp + src_h != buf_h)
+		while (tmp + src_h != buf_h)
 			tmp -= dy;
 
 		changed_y = 1;
@@ -53,9 +53,9 @@ check_hw_restriction_crtc(unsigned int crtc_w,
 
 static tdm_error
 check_hw_restriction(unsigned int crtc_w, unsigned int buf_w,
-                     unsigned int src_x, unsigned int src_w, unsigned int dst_x, unsigned int dst_w,
-                     unsigned int *new_src_x, unsigned int *new_src_w,
-                     unsigned int *new_dst_x, unsigned int *new_dst_w)
+						unsigned int src_x, unsigned int src_w, unsigned int dst_x, unsigned int dst_w,
+						unsigned int *new_src_x, unsigned int *new_src_w,
+						unsigned int *new_dst_x, unsigned int *new_dst_w)
 {
 	int start, end, diff;
 	int virtual_screen;
@@ -106,8 +106,8 @@ check_hw_restriction(unsigned int crtc_w, unsigned int buf_w,
 	if (src_x != *new_src_x || src_w != *new_src_w || dst_x != *new_dst_x ||
 	    dst_w != *new_dst_w)
 		TDM_DBG("=> buf_w(%d) src(%d,%d) dst(%d,%d), virt(%d) start(%d) end(%d)",
-		        buf_w, *new_src_x, *new_src_w, *new_dst_x, *new_dst_w, virtual_screen, start,
-		        end);
+				buf_w, *new_src_x, *new_src_w, *new_dst_x, *new_dst_w, virtual_screen, start,
+				end);
 
 	return TDM_ERROR_NONE;
 }
@@ -137,7 +137,7 @@ _tdm_exynos_output_get_mode(tdm_exynos_output_data *output_data)
 }
 
 static tdm_error
-_tdm_exynos_output_get_cur_msc (int fd, int pipe, uint *msc)
+_tdm_exynos_output_get_cur_msc(int fd, int pipe, uint *msc)
 {
 	drmVBlank vbl;
 
@@ -182,7 +182,7 @@ _tdm_exynos_output_wait_vblank(int fd, int pipe, uint *target_msc, void *data)
 
 static tdm_error
 _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
-                                        void *user_data, int *do_waitvblank)
+												  void *user_data, int *do_waitvblank)
 {
 	tdm_exynos_data *exynos_data = layer_data->exynos_data;
 	tdm_exynos_output_data *output_data = layer_data->output_data;
@@ -261,10 +261,10 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 
 		if (!layer_data->display_buffer) {
 			TDM_DBG("SetCrtc: drm_fd(%d) crtc_id(%d) off",
-			        exynos_data->drm_fd, output_data->crtc_id);
+					exynos_data->drm_fd, output_data->crtc_id);
 
 			if (drmModeSetCrtc(exynos_data->drm_fd, output_data->crtc_id,
-			                   0, 0, 0, NULL, 0, NULL)) {
+							   0, 0, 0, NULL, 0, NULL)) {
 				TDM_ERR("unset crtc failed: %m");
 				return TDM_ERROR_OPERATION_FAILED;
 			}
@@ -284,11 +284,11 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 			event_data->user_data = user_data;
 
 			TDM_DBG("PageFlip: drm_fd(%d) crtc_id(%d) fb_id(%d)",
-			        exynos_data->drm_fd, output_data->crtc_id,
-			        layer_data->display_buffer->fb_id);
+					exynos_data->drm_fd, output_data->crtc_id,
+					layer_data->display_buffer->fb_id);
 
 			if (drmModePageFlip(exynos_data->drm_fd, output_data->crtc_id,
-			                    layer_data->display_buffer->fb_id, DRM_MODE_PAGE_FLIP_EVENT, event_data)) {
+								layer_data->display_buffer->fb_id, DRM_MODE_PAGE_FLIP_EVENT, event_data)) {
 				TDM_ERR("pageflip failed: %m");
 				return TDM_ERROR_OPERATION_FAILED;
 			}
@@ -332,10 +332,10 @@ _tdm_exynos_output_commit_layer(tdm_exynos_layer_data *layer_data)
 
 	if (!layer_data->display_buffer) {
 		TDM_DBG("SetPlane: drm_fd(%d) plane_id(%d) crtc_id(%d) off",
-		        exynos_data->drm_fd, layer_data->plane_id, output_data->crtc_id);
+				exynos_data->drm_fd, layer_data->plane_id, output_data->crtc_id);
 
 		if (drmModeSetPlane(exynos_data->drm_fd, layer_data->plane_id,
-		                    output_data->crtc_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+							output_data->crtc_id, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 			TDM_ERR("unset plane(%d) filed: %m", layer_data->plane_id);
 
 		return TDM_ERROR_NONE;
@@ -343,21 +343,19 @@ _tdm_exynos_output_commit_layer(tdm_exynos_layer_data *layer_data)
 
 	/* check hw restriction*/
 	if (check_hw_restriction(crtc_w, layer_data->display_buffer->width,
-	                         layer_data->info.src_config.pos.x,
-	                         layer_data->info.src_config.pos.w,
-	                         layer_data->info.dst_pos.x,
-	                         layer_data->info.dst_pos.w,
-	                         &new_src_x, &new_src_w, &new_dst_x, &new_dst_w) != TDM_ERROR_NONE) {
+							 layer_data->info.src_config.pos.x,
+							 layer_data->info.src_config.pos.w,
+							 layer_data->info.dst_pos.x,
+							 layer_data->info.dst_pos.w,
+							 &new_src_x, &new_src_w, &new_dst_x, &new_dst_w) != TDM_ERROR_NONE) {
 		TDM_WRN("not going to set plane(%d)", layer_data->plane_id);
 		return TDM_ERROR_NONE;
 	}
 
 	if (layer_data->info.src_config.pos.x != new_src_x)
-		TDM_DBG("src_x changed: %d => %d", layer_data->info.src_config.pos.x,
-		        new_src_x);
+		TDM_DBG("src_x changed: %d => %d", layer_data->info.src_config.pos.x, new_src_x);
 	if (layer_data->info.src_config.pos.w != new_src_w)
-		TDM_DBG("src_w changed: %d => %d", layer_data->info.src_config.pos.w,
-		        new_src_w);
+		TDM_DBG("src_w changed: %d => %d", layer_data->info.src_config.pos.w, new_src_w);
 	if (layer_data->info.dst_pos.x != new_dst_x)
 		TDM_DBG("dst_x changed: %d => %d", layer_data->info.dst_pos.x, new_dst_x);
 	if (layer_data->info.dst_pos.w != new_dst_w)
@@ -370,18 +368,18 @@ _tdm_exynos_output_commit_layer(tdm_exynos_layer_data *layer_data)
 	fh = ((unsigned int)layer_data->info.src_config.pos.h) << 16;
 
 	TDM_DBG("SetPlane: drm_fd(%d) plane_id(%d) crtc_id(%d) fb_id(%d) src(%d,%d %dx%d) dst(%d,%d %dx%d)",
-	        exynos_data->drm_fd, layer_data->plane_id,
-	        output_data->crtc_id, layer_data->display_buffer->fb_id,
-	        new_src_x, layer_data->info.src_config.pos.y,
-	        new_src_w, layer_data->info.src_config.pos.h,
-	        layer_data->info.dst_pos.x, layer_data->info.dst_pos.y,
-	        layer_data->info.dst_pos.w, layer_data->info.dst_pos.h);
+			exynos_data->drm_fd, layer_data->plane_id,
+			output_data->crtc_id, layer_data->display_buffer->fb_id,
+			new_src_x, layer_data->info.src_config.pos.y,
+			new_src_w, layer_data->info.src_config.pos.h,
+			layer_data->info.dst_pos.x, layer_data->info.dst_pos.y,
+			layer_data->info.dst_pos.w, layer_data->info.dst_pos.h);
 
 	if (drmModeSetPlane(exynos_data->drm_fd, layer_data->plane_id,
-	                    output_data->crtc_id, layer_data->display_buffer->fb_id, 0,
-	                    new_dst_x, layer_data->info.dst_pos.y,
-	                    new_dst_w, layer_data->info.dst_pos.h,
-	                    fx, fy, fw, fh) < 0) {
+						output_data->crtc_id, layer_data->display_buffer->fb_id, 0,
+						new_dst_x, layer_data->info.dst_pos.y,
+						new_dst_w, layer_data->info.dst_pos.h,
+						fx, fy, fw, fh) < 0) {
 		TDM_ERR("set plane(%d) failed: %m", layer_data->plane_id);
 		return TDM_ERROR_OPERATION_FAILED;
 	}
@@ -391,8 +389,8 @@ _tdm_exynos_output_commit_layer(tdm_exynos_layer_data *layer_data)
 
 void
 tdm_exynos_output_cb_event(int fd, unsigned int sequence,
-                           unsigned int tv_sec, unsigned int tv_usec,
-                           void *user_data)
+								  unsigned int tv_sec, unsigned int tv_usec,
+								  void *user_data)
 {
 	tdm_exynos_event_data *event_data = user_data;
 	tdm_exynos_output_data *output_data;
@@ -408,17 +406,17 @@ tdm_exynos_output_cb_event(int fd, unsigned int sequence,
 	case TDM_EXYNOS_EVENT_TYPE_PAGEFLIP:
 		if (output_data->commit_func)
 			output_data->commit_func(output_data, sequence, tv_sec, tv_usec,
-			                         event_data->user_data);
+									 event_data->user_data);
 		break;
 	case TDM_EXYNOS_EVENT_TYPE_WAIT:
 		if (output_data->vblank_func)
 			output_data->vblank_func(output_data, sequence, tv_sec, tv_usec,
-			                         event_data->user_data);
+									 event_data->user_data);
 		break;
 	case TDM_EXYNOS_EVENT_TYPE_COMMIT:
 		if (output_data->commit_func)
 			output_data->commit_func(output_data, sequence, tv_sec, tv_usec,
-			                         event_data->user_data);
+									 event_data->user_data);
 		break;
 	default:
 		break;
@@ -429,7 +427,7 @@ tdm_exynos_output_cb_event(int fd, unsigned int sequence,
 
 tdm_error
 tdm_exynos_output_update_status(tdm_exynos_output_data *output_data,
-                                tdm_output_conn_status status)
+										tdm_output_conn_status status)
 {
 	RETURN_VAL_IF_FAIL(output_data, TDM_ERROR_INVALID_PARAMETER);
 
@@ -440,7 +438,7 @@ tdm_exynos_output_update_status(tdm_exynos_output_data *output_data,
 
 	if (output_data->status_func)
 		output_data->status_func(output_data, status,
-		                         output_data->status_user_data);
+								 output_data->status_user_data);
 
 	return TDM_ERROR_NONE;
 }
@@ -509,7 +507,7 @@ exynos_output_get_capability(tdm_output *output, tdm_caps_output *caps)
 	for (i = 0; i < caps->mode_count; i++) {
 		output_data->drm_modes[i] = connector->modes[i];
 		tdm_exynos_display_to_tdm_mode(&output_data->drm_modes[i],
-    					&output_data->output_modes[i]);
+									   &output_data->output_modes[i]);
 		caps->modes[i] = output_data->output_modes[i];
 	}
 
@@ -537,7 +535,7 @@ exynos_output_get_capability(tdm_output *output, tdm_caps_output *caps)
 	}
 
 	props = drmModeObjectGetProperties(exynos_data->drm_fd, output_data->crtc_id,
-	                                   DRM_MODE_OBJECT_CRTC);
+									   DRM_MODE_OBJECT_CRTC);
 	if (!props) {
 		ret = TDM_ERROR_OPERATION_FAILED;
 		TDM_ERR("get crtc properties failed: %m\n");
@@ -554,7 +552,7 @@ exynos_output_get_capability(tdm_output *output, tdm_caps_output *caps)
 
 	for (i = 0; i < caps->prop_count; i++) {
 		drmModePropertyPtr prop = drmModeGetProperty(exynos_data->drm_fd,
-		                          props->props[i]);
+													 props->props[i]);
 		if (!prop)
 			continue;
 		snprintf(caps->props[i].name, TDM_NAME_LEN, "%s", prop->name);
@@ -633,8 +631,8 @@ exynos_output_set_property(tdm_output *output, unsigned int id, tdm_value value)
 
 	exynos_data = output_data->exynos_data;
 	ret = drmModeObjectSetProperty(exynos_data->drm_fd,
-	                               output_data->crtc_id, DRM_MODE_OBJECT_CRTC,
-	                               id, value.u32);
+								   output_data->crtc_id, DRM_MODE_OBJECT_CRTC,
+								   id, value.u32);
 	if (ret < 0) {
 		TDM_ERR("set property failed: %m");
 		return TDM_ERROR_OPERATION_FAILED;
@@ -645,7 +643,7 @@ exynos_output_set_property(tdm_output *output, unsigned int id, tdm_value value)
 
 tdm_error
 exynos_output_get_property(tdm_output *output, unsigned int id,
-                           tdm_value *value)
+								 tdm_value *value)
 {
 	tdm_exynos_output_data *output_data = output;
 	tdm_exynos_data *exynos_data;
@@ -658,7 +656,7 @@ exynos_output_get_property(tdm_output *output, unsigned int id,
 
 	exynos_data = output_data->exynos_data;
 	props = drmModeObjectGetProperties(exynos_data->drm_fd, output_data->crtc_id,
-	                                   DRM_MODE_OBJECT_CRTC);
+									   DRM_MODE_OBJECT_CRTC);
 	if (props == NULL) {
 		TDM_ERR("get property failed: %m");
 		return TDM_ERROR_OPERATION_FAILED;
@@ -677,7 +675,7 @@ exynos_output_get_property(tdm_output *output, unsigned int id,
 
 tdm_error
 exynos_output_wait_vblank(tdm_output *output, int interval, int sync,
-                          void *user_data)
+								void *user_data)
 {
 	tdm_exynos_output_data *output_data = output;
 	tdm_exynos_data *exynos_data;
@@ -696,7 +694,7 @@ exynos_output_wait_vblank(tdm_output *output, int interval, int sync,
 	exynos_data = output_data->exynos_data;
 
 	ret = _tdm_exynos_output_get_cur_msc(exynos_data->drm_fd, output_data->pipe,
-	                                     &target_msc);
+										 &target_msc);
 	if (ret != TDM_ERROR_NONE)
 		goto failed_vblank;
 
@@ -707,7 +705,7 @@ exynos_output_wait_vblank(tdm_output *output, int interval, int sync,
 	event_data->user_data = user_data;
 
 	ret = _tdm_exynos_output_wait_vblank(exynos_data->drm_fd, output_data->pipe,
-	                                     &target_msc, event_data);
+										 &target_msc, event_data);
 	if (ret != TDM_ERROR_NONE)
 		goto failed_vblank;
 
@@ -719,7 +717,7 @@ failed_vblank:
 
 tdm_error
 exynos_output_set_vblank_handler(tdm_output *output,
-                                 tdm_output_vblank_handler func)
+										tdm_output_vblank_handler func)
 {
 	tdm_exynos_output_data *output_data = output;
 
@@ -747,7 +745,7 @@ exynos_output_commit(tdm_output *output, int sync, void *user_data)
 	LIST_FOR_EACH_ENTRY(layer_data, &output_data->layer_list, link) {
 		if (layer_data == output_data->primary_layer) {
 			ret = _tdm_exynos_output_commit_primary_layer(layer_data, user_data,
-			                &do_waitvblank);
+														  &do_waitvblank);
 			if (ret != TDM_ERROR_NONE)
 				return ret;
 		} else {
@@ -767,7 +765,7 @@ exynos_output_commit(tdm_output *output, int sync, void *user_data)
 		}
 
 		ret = _tdm_exynos_output_get_cur_msc(exynos_data->drm_fd, output_data->pipe,
-		                                     &target_msc);
+											 &target_msc);
 		if (ret != TDM_ERROR_NONE) {
 			free(event_data);
 			return ret;
@@ -780,7 +778,7 @@ exynos_output_commit(tdm_output *output, int sync, void *user_data)
 		event_data->user_data = user_data;
 
 		ret = _tdm_exynos_output_wait_vblank(exynos_data->drm_fd, output_data->pipe,
-		                                     &target_msc, event_data);
+											 &target_msc, event_data);
 		if (ret != TDM_ERROR_NONE) {
 			free(event_data);
 			return ret;
@@ -792,7 +790,7 @@ exynos_output_commit(tdm_output *output, int sync, void *user_data)
 
 tdm_error
 exynos_output_set_commit_handler(tdm_output *output,
-                                 tdm_output_commit_handler func)
+										 tdm_output_commit_handler func)
 {
 	tdm_exynos_output_data *output_data = output;
 
@@ -815,8 +813,8 @@ exynos_output_set_dpms(tdm_output *output, tdm_output_dpms dpms_value)
 
 	exynos_data = output_data->exynos_data;
 	ret = drmModeObjectSetProperty(exynos_data->drm_fd,
-	                               output_data->connector_id, DRM_MODE_OBJECT_CONNECTOR,
-	                               output_data->dpms_prop_id, dpms_value);
+								   output_data->connector_id, DRM_MODE_OBJECT_CONNECTOR,
+								   output_data->dpms_prop_id, dpms_value);
 	if (ret < 0) {
 		TDM_ERR("set dpms failed: %m");
 		return TDM_ERROR_OPERATION_FAILED;
@@ -838,7 +836,7 @@ exynos_output_get_dpms(tdm_output *output, tdm_output_dpms *dpms_value)
 
 	exynos_data = output_data->exynos_data;
 	props = drmModeObjectGetProperties(exynos_data->drm_fd,
-	                                   output_data->connector_id, DRM_MODE_OBJECT_CONNECTOR);
+									   output_data->connector_id, DRM_MODE_OBJECT_CONNECTOR);
 	if (props == NULL) {
 		TDM_ERR("get property failed: %m");
 		return TDM_ERROR_OPERATION_FAILED;
@@ -884,8 +882,8 @@ exynos_output_get_mode(tdm_output *output, const tdm_output_mode **mode)
 
 tdm_error
 exynos_output_set_status_handler(tdm_output *output,
-                                 tdm_output_status_handler func,
-                                 void *user_data)
+									   tdm_output_status_handler func,
+									   void *user_data)
 {
 	tdm_exynos_output_data *output_data = output;
 

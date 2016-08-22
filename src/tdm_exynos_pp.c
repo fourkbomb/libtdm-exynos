@@ -91,33 +91,30 @@ _tdm_exynos_pp_set(tdm_exynos_pp_data *pp_data)
 
 	CLEAR(property);
 	property.config[0].ops_id = EXYNOS_DRM_OPS_SRC;
-	property.config[0].fmt = tdm_exynos_format_to_drm_format(
-	                                 info->src_config.format);
+	property.config[0].fmt = tdm_exynos_format_to_drm_format(info->src_config.format);
 	memcpy(&property.config[0].sz, &info->src_config.size, sizeof(tdm_size));
 	memcpy(&property.config[0].pos, &info->src_config.pos, sizeof(tdm_pos));
 	property.config[1].ops_id = EXYNOS_DRM_OPS_DST;
 	property.config[1].degree = info->transform % 4;
-	property.config[1].flip = (info->transform > 3) ? EXYNOS_DRM_FLIP_HORIZONTAL :
-	                          0;
-	property.config[1].fmt = tdm_exynos_format_to_drm_format(
-	                                 info->dst_config.format);
+	property.config[1].flip = (info->transform > 3) ? EXYNOS_DRM_FLIP_HORIZONTAL : 0;
+	property.config[1].fmt = tdm_exynos_format_to_drm_format(info->dst_config.format);
 	memcpy(&property.config[1].sz, &info->dst_config.size, sizeof(tdm_size));
 	memcpy(&property.config[1].pos, &info->dst_config.pos, sizeof(tdm_pos));
 	property.cmd = IPP_CMD_M2M;
 	property.prop_id = pp_data->prop_id;
 
 	TDM_DBG("src : flip(%x) deg(%d) fmt(%c%c%c%c) sz(%dx%d) pos(%d,%d %dx%d)  ",
-	        property.config[0].flip, property.config[0].degree,
-	        FOURCC_STR(property.config[0].fmt),
-	        property.config[0].sz.hsize, property.config[0].sz.vsize,
-	        property.config[0].pos.x, property.config[0].pos.y, property.config[0].pos.w,
-	        property.config[0].pos.h);
+			property.config[0].flip, property.config[0].degree,
+			FOURCC_STR(property.config[0].fmt),
+			property.config[0].sz.hsize, property.config[0].sz.vsize,
+			property.config[0].pos.x, property.config[0].pos.y, property.config[0].pos.w,
+			property.config[0].pos.h);
 	TDM_DBG("dst : flip(%x) deg(%d) fmt(%c%c%c%c) sz(%dx%d) pos(%d,%d %dx%d)  ",
-	        property.config[1].flip, property.config[1].degree,
-	        FOURCC_STR(property.config[1].fmt),
-	        property.config[1].sz.hsize, property.config[1].sz.vsize,
-	        property.config[1].pos.x, property.config[1].pos.y, property.config[1].pos.w,
-	        property.config[1].pos.h);
+			property.config[1].flip, property.config[1].degree,
+			FOURCC_STR(property.config[1].fmt),
+			property.config[1].sz.hsize, property.config[1].sz.vsize,
+			property.config[1].pos.x, property.config[1].pos.y, property.config[1].pos.w,
+			property.config[1].pos.h);
 
 	ret = ioctl(exynos_data->drm_fd, DRM_IOCTL_EXYNOS_IPP_SET_PROPERTY, &property);
 	if (ret) {
@@ -132,7 +129,7 @@ _tdm_exynos_pp_set(tdm_exynos_pp_data *pp_data)
 
 static tdm_error
 _tdm_exynos_pp_queue(tdm_exynos_pp_data *pp_data, tdm_exynos_pp_buffer *buffer,
-                     enum drm_exynos_ipp_buf_type type)
+							enum drm_exynos_ipp_buf_type type)
 {
 	tdm_exynos_data *exynos_data = pp_data->exynos_data;
 	struct drm_exynos_ipp_queue_buf buf;
@@ -151,13 +148,13 @@ _tdm_exynos_pp_queue(tdm_exynos_pp_data *pp_data, tdm_exynos_pp_buffer *buffer,
 	}
 
 	TDM_DBG("prop_id(%d) ops_id(%d) ctrl(%d) id(%d) handles(%x %x %x). ",
-	        buf.prop_id, buf.ops_id, buf.buf_type, buf.buf_id,
-	        buf.handle[0], buf.handle[1], buf.handle[2]);
+			buf.prop_id, buf.ops_id, buf.buf_type, buf.buf_id,
+			buf.handle[0], buf.handle[1], buf.handle[2]);
 
 	ret = ioctl(exynos_data->drm_fd, DRM_IOCTL_EXYNOS_IPP_QUEUE_BUF, &buf);
 	if (ret) {
 		TDM_ERR("src failed. prop_id(%d) op(%d) buf(%d) id(%d). %m",
-		        buf.prop_id, buf.ops_id, buf.buf_type, buf.buf_id);
+				buf.prop_id, buf.ops_id, buf.buf_type, buf.buf_id);
 		return TDM_ERROR_OPERATION_FAILED;
 	}
 
@@ -174,13 +171,13 @@ _tdm_exynos_pp_queue(tdm_exynos_pp_data *pp_data, tdm_exynos_pp_buffer *buffer,
 	}
 
 	TDM_DBG("prop_id(%d) ops_id(%d) ctrl(%d) id(%d) handles(%x %x %x). ",
-	        buf.prop_id, buf.ops_id, buf.buf_type, buf.buf_id,
-	        buf.handle[0], buf.handle[1], buf.handle[2]);
+			buf.prop_id, buf.ops_id, buf.buf_type, buf.buf_id,
+			buf.handle[0], buf.handle[1], buf.handle[2]);
 
 	ret = ioctl(exynos_data->drm_fd, DRM_IOCTL_EXYNOS_IPP_QUEUE_BUF, &buf);
 	if (ret) {
 		TDM_ERR("dst failed. prop_id(%d) op(%d) buf(%d) id(%d). %m",
-		        buf.prop_id, buf.ops_id, buf.buf_type, buf.buf_id);
+				buf.prop_id, buf.ops_id, buf.buf_type, buf.buf_id);
 		return TDM_ERROR_OPERATION_FAILED;
 	}
 
@@ -214,15 +211,14 @@ _tdm_exynos_pp_cmd(tdm_exynos_pp_data *pp_data, enum drm_exynos_ipp_ctrl cmd)
 
 void
 tdm_exynos_pp_cb(int fd, unsigned int prop_id, unsigned int *buf_idx,
-                 unsigned int tv_sec, unsigned int tv_usec,
-                 void *user_data)
+					  unsigned int tv_sec, unsigned int tv_usec, void *user_data)
 {
 	tdm_exynos_pp_handler(prop_id, buf_idx, tv_sec, tv_usec, user_data);
 }
 
 void
 tdm_exynos_pp_handler(unsigned int prop_id, unsigned int *buf_idx,
-                      unsigned int tv_sec, unsigned int tv_usec, void *data)
+							unsigned int tv_sec, unsigned int tv_usec, void *data)
 {
 	tdm_exynos_pp_data *found = NULL, *pp_data = data;
 	tdm_exynos_pp_buffer *b = NULL, *bb = NULL, *dequeued_buffer = NULL;
@@ -262,9 +258,9 @@ tdm_exynos_pp_handler(unsigned int prop_id, unsigned int *buf_idx,
 
 	if (pp_data->done_func)
 		pp_data->done_func(pp_data,
-		                   dequeued_buffer->src,
-		                   dequeued_buffer->dst,
-		                   pp_data->done_user_data);
+						   dequeued_buffer->src,
+						   dequeued_buffer->dst,
+						   pp_data->done_user_data);
 	free(dequeued_buffer);
 }
 
@@ -436,7 +432,7 @@ exynos_pp_commit(tdm_pp *pp)
 
 tdm_error
 exynos_pp_set_done_handler(tdm_pp *pp, tdm_pp_done_handler func,
-                           void *user_data)
+								  void *user_data)
 {
 	tdm_exynos_pp_data *pp_data = pp;
 
