@@ -4,8 +4,6 @@
 
 #include <tdm_helper.h>
 
-#include <hardware/hwcomposer.h>
-
 #include "tdm_android.h"
 
 static tdm_android_data *android_data;
@@ -17,6 +15,9 @@ tdm_android_deinit(tdm_backend_data *bdata)
 		return;
 
 	TDM_INFO("deinit");
+
+	if (android_data->hwc_dev)
+		hwc_close_1(android_data->hwc_dev);
 
 	free(android_data);
 	android_data = NULL;
@@ -51,6 +52,21 @@ tdm_android_init(tdm_display *dpy, tdm_error *error)
 		if (error)
 			*error = TDM_ERROR_OUT_OF_MEMORY;
 		return NULL;
+	}
+
+	ret = hw_get_module(HWC_HARDWARE_MODULE_ID,
+						(const hw_module_t **)&android_data->hwc_module);
+	if (ret || !android_data->hwc_module) {
+		TDM_ERR("cannot get hwc module");
+		ret = TDM_ERROR_OPERATION_FAILED;
+		goto failed;
+	}
+
+	ret = hwc_open_1(android_data->hwc_module, &android_data->hwc_dev);
+	if (ret || !android_data->hwc_dev) {
+		TDM_ERR("cannot open hwc device");
+		ret = TDM_ERROR_OPERATION_FAILED;
+		goto failed;
 	}
 
 	memset(&android_func_display, 0, sizeof(android_func_display));

@@ -19,6 +19,8 @@
 #include <tdm_log.h>
 #include <tdm_list.h>
 
+#include <hardware/hardware.h>
+#include <hardware/hwcomposer.h>
 
 /* android module internal macros, structures */
 #define NEVER_GET_HERE() TDM_ERR("** NEVER GET HERE **")
@@ -38,6 +40,8 @@ typedef struct _tdm_exynos_display_buffer tdm_android_display_buffer;
 struct _tdm_android_data
 {
     tdm_display *dpy;
+    hw_module_t* hwc_module;
+    hwc_composer_device_1_t* hwc_dev;
 };
 
 struct _tdm_android_output_data
