@@ -29,7 +29,7 @@ AC_PROG_CC
 
 AC_HEADER_STDC
 
-PKG_CHECK_MODULES(TDM_BACKEND_ANDROID, libtdm libtbm android-headers)
+PKG_CHECK_MODULES(TDM_BACKEND_ANDROID, libtdm libtbm android-headers android-hw-libs)
 
 # set the dir for the tdm module
 DEFAULT_TDM_MODULE_PATH="${libdir}/tdm"
