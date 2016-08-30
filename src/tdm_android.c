@@ -334,6 +334,9 @@ tdm_android_deinit(tdm_backend_data *bdata)
 
 	TDM_INFO("deinit");
 
+	tdm_android_display_destroy_output_list(android_data->outputs,
+											android_data->num_outputs);
+
 	if (android_data->hwc_manager)
 		clean_leayers_list(android_data->hwc_manager);
 	if (android_data->hwc_manager->hwc_dev)

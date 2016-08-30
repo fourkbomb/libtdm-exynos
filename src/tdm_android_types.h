@@ -44,11 +44,15 @@ struct _tdm_android_data
     tdm_display *dpy;
 
     hwc_manager_t hwc_manager;
+
+    tdm_android_output_data *outputs;
+    int num_outputs;
 };
 
 struct _tdm_android_output_data
 {
-    struct list_head link;
+	int display_type;
+	tdm_output_conn_status status;
 };
 
 struct _tdm_android_layer_data
