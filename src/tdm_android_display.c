@@ -20,7 +20,7 @@ tdm_android_display_update_output_status(tdm_android_data *android_data)
 void
 tdm_android_display_destroy_output_list(tdm_android_output_data *outputs, int num)
 {
-	free(outputs);
+	return;
 }
 
 static tdm_error
@@ -114,11 +114,13 @@ android_display_get_outputs(tdm_backend_data *bdata, int *count,
 		if (ret != TDM_ERROR_NONE)
 			goto failed_get;
 
-		android_data->outputs = outputs_data;
 		android_data->num_outputs = *count;
+		for (i = 0; i < *count; ++i) {
+			android_data->outputs[i] = outputs_data[i];
+		}
+		free(outputs_data);
 	}
 
-	outputs_data = android_data->outputs;
 	*count = android_data->num_outputs;
 
 	/* will be freed in frontend */
@@ -131,7 +133,7 @@ android_display_get_outputs(tdm_backend_data *bdata, int *count,
 	}
 
 	for (i = 0; i < *count; ++i)
-		outputs[i] = &outputs_data[i];
+		outputs[i] = &android_data->outputs[i];
 
 	if (error)
 		*error = TDM_ERROR_NONE;

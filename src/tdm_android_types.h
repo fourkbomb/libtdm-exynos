@@ -39,20 +39,20 @@ typedef struct _tdm_exynos_display_buffer tdm_android_display_buffer;
 
 typedef struct _hwc_manager* hwc_manager_t;
 
+struct _tdm_android_output_data
+{
+	int display_type;
+	tdm_output_conn_status status;
+};
+
 struct _tdm_android_data
 {
     tdm_display *dpy;
 
     hwc_manager_t hwc_manager;
 
-    tdm_android_output_data *outputs;
+    tdm_android_output_data outputs[HWC_NUM_DISPLAY_TYPES];
     int num_outputs;
-};
-
-struct _tdm_android_output_data
-{
-	int display_type;
-	tdm_output_conn_status status;
 };
 
 struct _tdm_android_layer_data
