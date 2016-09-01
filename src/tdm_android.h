@@ -24,15 +24,12 @@
 #include "tdm_android_display.h"
 #include "tdm_android_output.h"
 #include "tdm_android_layer.h"
-#include "tdm_android_pp.h"
 
 /* android backend functions */
 tdm_error    android_display_get_capabilitiy(tdm_backend_data *bdata, tdm_caps_display *caps);
-tdm_error    android_display_get_pp_capability(tdm_backend_data *bdata, tdm_caps_pp *caps);
 tdm_output** android_display_get_outputs(tdm_backend_data *bdata, int *count, tdm_error *error);
 tdm_error    android_display_get_fd(tdm_backend_data *bdata, int *fd);
 tdm_error    android_display_handle_events(tdm_backend_data *bdata);
-tdm_pp*      android_display_create_pp(tdm_backend_data *bdata, tdm_error *error);
 tdm_error    android_output_get_capability(tdm_output *output, tdm_caps_output *caps);
 tdm_layer**  android_output_get_layers(tdm_output *output, int *count, tdm_error *error);
 tdm_error    android_output_set_property(tdm_output *output, unsigned int id, tdm_value value);
@@ -53,10 +50,5 @@ tdm_error    android_layer_set_info(tdm_layer *layer, tdm_info_layer *info);
 tdm_error    android_layer_get_info(tdm_layer *layer, tdm_info_layer *info);
 tdm_error    android_layer_set_buffer(tdm_layer *layer, tbm_surface_h buffer);
 tdm_error    android_layer_unset_buffer(tdm_layer *layer);
-void         android_pp_destroy(tdm_pp *pp);
-tdm_error    android_pp_set_info(tdm_pp *pp, tdm_info_pp *info);
-tdm_error    android_pp_attach(tdm_pp *pp, tbm_surface_h src, tbm_surface_h dst);
-tdm_error    android_pp_commit(tdm_pp *pp);
-tdm_error    android_pp_set_done_handler(tdm_pp *pp, tdm_pp_done_handler func, void *user_data);
 
 #endif /* _TDM_ANDROID_H_ */

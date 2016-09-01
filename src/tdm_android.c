@@ -56,11 +56,9 @@ tdm_android_init(tdm_display *dpy, tdm_error *error)
 
 	memset(&android_func_display, 0, sizeof(android_func_display));
 	android_func_display.display_get_capabilitiy = android_display_get_capabilitiy;
-	android_func_display.display_get_pp_capability = android_display_get_pp_capability;
 	android_func_display.display_get_outputs = android_display_get_outputs;
 	android_func_display.display_get_fd = android_display_get_fd;
 	android_func_display.display_handle_events = android_display_handle_events;
-	android_func_display.display_create_pp = android_display_create_pp;
 
 	memset(&android_func_output, 0, sizeof(android_func_output));
 	android_func_output.output_get_capability = android_output_get_capability;
