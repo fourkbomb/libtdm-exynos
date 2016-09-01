@@ -9,6 +9,7 @@
 
 #define MAX_HW_LAYERS (4)
 
+
 /* stores hwcomposer specific parameters */
 struct _hwc_manager
 {
@@ -33,6 +34,10 @@ struct _hwc_manager
 	uint32_t vsyns_period; /* in nanoseconds */
 	uint32_t x_dpi; /* in dot per kinch */
 	uint32_t y_dpi;
+
+	/* this callback will be called ONCE after a vblank event delivery */
+	tdm_output_commit_handler commit_hndl;
+	void *data;
 };
 
 
@@ -118,6 +123,25 @@ _hwc_invalidate_cb(const struct hwc_procs *procs)
 static void
 _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 {
+	tdm_android_output_data *output_data;
+	hwc_manager_t hwc_manager;
+	int64_t tv_sec, tv_usec;
+
+	TDM_DBG("######################  hwc_vsync callback: ts: %lld.  ######################", ts);
+
+	hwc_manager = container_of(procs, hwc_manager, hwc_callbacks);
+
+	output_data = hwc_manager->data;
+
+	/* TODO: must be checked for compatibility with values drm provides which */
+	tv_sec = ts/1000000000;
+	tv_usec = (ts - tv_sec*10000000)/1000;
+
+	/* TODO: what about inter-thread synchronization ?*/
+	/* TODO: what about sequence argument ? */
+	/* TODO: it's temporary hack: we just bypass tdm_thread... write data to pipe by self... */
+	hwc_manager->commit_hndl(output_data, 0, (unsigned int)tv_sec, (unsigned int)tv_usec,
+			output_data->commit_hndl_data);
 }
 
 /* callback */
@@ -214,7 +238,7 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 	hwc_manager->hwc_dev->registerProcs(hwc_manager->hwc_dev, &hwc_manager->hwc_callbacks);
 
 	/* always turn vsync off when we start */
-	android_hwc_vsync_event_control(hwc_manager, 0);
+	android_hwc_vsync_event_control(hwc_manager, HWC_DISPLAY_PRIMARY, 0);
 
 	// get available display configurations
 	res = hwc_manager->hwc_dev->getDisplayConfigs(hwc_manager->hwc_dev, HWC_DISPLAY_PRIMARY, configs, &num_configs);
@@ -289,7 +313,7 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 	}
 
 	/* turn on vsync event delivery */
-	ret = android_hwc_vsync_event_control(hwc_manager, 1);
+	ret = android_hwc_vsync_event_control(hwc_manager, HWC_DISPLAY_PRIMARY, 1);
 	if (ret) {
 		_clean_leayers_list(hwc_manager);
 		hwc_close_1(hwc_manager->hwc_dev);
@@ -386,10 +410,22 @@ android_hwc_primary_layer_set_buff(hwc_manager_t hwc_manager, int output_idx, bu
 void
 android_hwc_output_set_commit_handler(hwc_manager_t hwc_manager, int output_idx, tdm_output_commit_handler hndl)
 {
+	hwc_manager->commit_hndl = hndl;
 }
 
 tdm_error
 android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, void *data)
 {
+	int ret;
+
+	/* TODO: some work for synchronize issues (hwc access to buffer) must be done */
+	/* TODO: some work to make ability to use tdm_commit in sync modes (now only async mode is supplied) */
+
+	hwc_manager->data = data;
+
+	ret = hwc_manager->hwc_dev->set(hwc_manager->hwc_dev, output_idx, hwc_manager->disps_list);
+	if (ret)
+		return TDM_ERROR_OPERATION_FAILED;
+
 	return TDM_ERROR_NONE;
 }

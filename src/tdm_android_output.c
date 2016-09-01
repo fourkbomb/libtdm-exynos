@@ -3,8 +3,10 @@
 #endif
 
 #include <tdm_helper.h>
-#include "tdm_android.h"
 
+#include "tdm_hwc.h"
+
+#include "tdm_android.h"
 
 void
 tdm_android_output_cb_event(int fd, unsigned int sequence,
@@ -62,13 +64,34 @@ android_output_set_vblank_handler(tdm_output *output,
 tdm_error
 android_output_commit(tdm_output *output, int sync, void *user_data)
 {
-	return TDM_ERROR_NONE;
+	tdm_android_output_data *output_data;
+	hwc_manager_t hwc_manager;
+
+	RETURN_VAL_IF_FAIL(output, TDM_ERROR_INVALID_PARAMETER);
+
+	output_data = output;
+	hwc_manager = output_data->android_data->hwc_manager;
+
+	output_data->commit_hndl_data = user_data;
+
+	return android_hwc_output_commit(hwc_manager, output_data->otput_idx, sync, output);
 }
 
 tdm_error
 android_output_set_commit_handler(tdm_output *output,
-                                 tdm_output_commit_handler func)
+                                 tdm_output_commit_handler hndl)
 {
+	tdm_android_output_data *output_data;
+	hwc_manager_t hwc_manager;
+
+	RETURN_VAL_IF_FAIL(output, TDM_ERROR_INVALID_PARAMETER);
+	RETURN_VAL_IF_FAIL(hndl, TDM_ERROR_INVALID_PARAMETER);
+
+	output_data = output;
+	hwc_manager = output_data->android_data->hwc_manager;
+
+	android_hwc_output_set_commit_handler(hwc_manager, output_data->otput_idx, hndl);
+
 	return TDM_ERROR_NONE;
 }
 

@@ -41,8 +41,17 @@ typedef struct _hwc_manager* hwc_manager_t;
 
 struct _tdm_android_output_data
 {
+	tdm_android_data *android_data;
+
 	int display_type;
 	tdm_output_conn_status status;
+
+	/* to identify output in hwcomposer world */
+	int otput_idx;
+
+	/* data to pass to function which will be called after all changes for this output are applied,
+	 * (more exactly after page-flip) */
+	void *commit_hndl_data;
 };
 
 struct _tdm_android_data

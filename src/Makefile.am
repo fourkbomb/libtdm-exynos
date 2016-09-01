@@ -12,5 +12,5 @@ libtdm_android_la_SOURCES = \
 	tdm_android_display.c \
 	tdm_android_output.c \
 	tdm_android_layer.c \
-	tdm_android_pp.c \
-	tdm_android.c
+	tdm_android.c \
+	tdm_hwc.c
