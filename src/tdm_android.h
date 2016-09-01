@@ -37,7 +37,7 @@ tdm_error    android_output_get_property(tdm_output *output, unsigned int id, td
 tdm_error    android_output_wait_vblank(tdm_output *output, int interval, int sync, void *user_data);
 tdm_error    android_output_set_vblank_handler(tdm_output *output, tdm_output_vblank_handler func);
 tdm_error    android_output_commit(tdm_output *output, int sync, void *user_data);
-tdm_error    android_output_set_commit_handler(tdm_output *output, tdm_output_commit_handler func);
+tdm_error    android_output_set_commit_handler(tdm_output *output, tdm_output_commit_handler hndl);
 tdm_error    android_output_set_dpms(tdm_output *output, tdm_output_dpms dpms_value);
 tdm_error    android_output_get_dpms(tdm_output *output, tdm_output_dpms *dpms_value);
 tdm_error    android_output_set_mode(tdm_output *output, const tdm_output_mode *mode);
@@ -48,7 +48,7 @@ tdm_error    android_layer_set_property(tdm_layer *layer, unsigned int id, tdm_v
 tdm_error    android_layer_get_property(tdm_layer *layer, unsigned int id, tdm_value *value);
 tdm_error    android_layer_set_info(tdm_layer *layer, tdm_info_layer *info);
 tdm_error    android_layer_get_info(tdm_layer *layer, tdm_info_layer *info);
-tdm_error    android_layer_set_buffer(tdm_layer *layer, tbm_surface_h buffer);
+tdm_error    android_layer_set_buffer(tdm_layer *layer, tbm_surface_h surface);
 tdm_error    android_layer_unset_buffer(tdm_layer *layer);
 
 #endif /* _TDM_ANDROID_H_ */

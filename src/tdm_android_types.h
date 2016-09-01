@@ -35,7 +35,7 @@
 typedef struct _tdm_android_data tdm_android_data;
 typedef struct _tdm_android_output_data tdm_android_output_data;
 typedef struct _tdm_android_layer_data tdm_android_layer_data;
-typedef struct _tdm_exynos_display_buffer tdm_android_display_buffer;
+typedef struct _tdm_android_display_buffer tdm_android_display_buffer;
 
 typedef struct _hwc_manager* hwc_manager_t;
 
