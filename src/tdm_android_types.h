@@ -67,6 +67,16 @@ struct _tdm_android_data
 struct _tdm_android_layer_data
 {
     struct list_head link;
+
+    tdm_android_data *android_data;
+
+    /* to identify layer in hwcomposer world
+     * 0 - is the top layer
+     * max_hw_layers - 1 - is the bottom layer
+     * Note: for tbm layer with TDM_LAYER_CAPABILITY_PRIMARY capability
+     *       this backend maps layer with HWC_FRAMEBUFFER_TARGET capability
+     *       and it has layer_idx == max_hw_layers - 1 */
+    int layer_idx;
 };
 
 struct _tdm_android_display_buffer

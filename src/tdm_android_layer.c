@@ -3,6 +3,9 @@
 #endif
 
 #include <tdm_helper.h>
+
+#include "tdm_hwc.h"
+
 #include "tdm_android.h"
 
 
@@ -27,6 +30,17 @@ android_layer_get_property(tdm_layer *layer, unsigned int id, tdm_value *value)
 tdm_error
 android_layer_set_info(tdm_layer *layer, tdm_info_layer *info)
 {
+	tdm_android_layer_data *layer_data;
+	hwc_manager_t hwc_manager;
+
+	RETURN_VAL_IF_FAIL(layer, TDM_ERROR_INVALID_PARAMETER);
+	RETURN_VAL_IF_FAIL(info, TDM_ERROR_INVALID_PARAMETER);
+
+	layer_data = layer;
+	hwc_manager = layer_data->android_data->hwc_manager;
+
+	android_hwc_layer_set_info(hwc_manager, layer_data->layer_idx, info);
+
 	return TDM_ERROR_NONE;
 }
 
@@ -37,8 +51,28 @@ android_layer_get_info(tdm_layer *layer, tdm_info_layer *info)
 }
 
 tdm_error
-android_layer_set_buffer(tdm_layer *layer, tbm_surface_h buffer)
+android_layer_set_buffer(tdm_layer *layer, tbm_surface_h surface)
 {
+	tdm_android_layer_data *layer_data;
+	hwc_manager_t hwc_manager;
+	buffer_handle_t buff;
+	tbm_bo bo;
+
+	RETURN_VAL_IF_FAIL(layer, TDM_ERROR_INVALID_PARAMETER);
+	RETURN_VAL_IF_FAIL(surface, TDM_ERROR_INVALID_PARAMETER);
+
+	layer_data = layer;
+	hwc_manager = layer_data->android_data->hwc_manager;
+
+	/* now we support only 'bo_idx == 1' case */
+	bo = tbm_surface_internal_get_bo(surface, 0);
+	RETURN_VAL_IF_FAIL(bo, TDM_ERROR_OPERATION_FAILED);
+
+	buff = (buffer_handle_t)(tbm_bo_get_handle(bo, TBM_DEVICE_DEFAULT).u32);
+	RETURN_VAL_IF_FAIL(buff, TDM_ERROR_OPERATION_FAILED);
+
+	android_hwc_layer_set_buff(hwc_manager, layer_data->layer_idx, buff);
+
 	return TDM_ERROR_NONE;
 }
 

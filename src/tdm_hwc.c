@@ -390,21 +390,29 @@ android_hwc_get_layer_capabilities(hwc_manager_t hwc_manager, int layer_idx, tdm
 void
 android_hwc_layer_set_info(hwc_manager_t hwc_manager, int output_idx, int layer_idx, tdm_info_layer *info)
 {
+	hwc_layer_1_t *curr_layer;
+
+	curr_layer = hwc_manager->disps_list[output_idx]->hwLayers[layer_idx];
+
+	curr_layer->sourceCropf.left = (float)info->src_config.pos.x;
+	curr_layer->sourceCropf.top = (float)info->src_config.pos.y;
+	curr_layer->sourceCropf.right = (float)(info->src_config.pos.x + info->src_config.pos.w);
+	curr_layer->sourceCropf.bottom = (float)(info->src_config.pos.y + info->src_config.pos.h);
+
+	curr_layer->displayFrame.left = info->dst_pos.x;
+	curr_layer->displayFrame.top = info->dst_pos.y;
+	curr_layer->displayFrame.right = info->dst_pos.x + info->dst_pos.w;
+	curr_layer->displayFrame.bottom = info->dst_pos.y + info->dst_pos.h;
 }
 
 void
 android_hwc_layer_set_buff(hwc_manager_t hwc_manager, int output_idx, int layer_idx, buffer_handle_t buff)
 {
-}
+	hwc_layer_1_t *curr_layer;
 
-void
-android_hwc_primary_layer_set_info(hwc_manager_t hwc_manager, int output_idx, tdm_info_layer *info)
-{
-}
+	curr_layer = hwc_manager->disps_list[output_idx]->hwLayers[layer_idx];
 
-void
-android_hwc_primary_layer_set_buff(hwc_manager_t hwc_manager, int output_idx, buffer_handle_t buff)
-{
+	curr_layer->handle = buff;
 }
 
 void
