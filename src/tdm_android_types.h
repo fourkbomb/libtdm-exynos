@@ -70,6 +70,9 @@ struct _tdm_android_layer_data
 
     tdm_android_data *android_data;
 
+    /* output this layer is associated with */
+    tdm_android_output_data *output;
+
     /* to identify layer in hwcomposer world
      * 0 - is the top layer
      * max_hw_layers - 1 - is the bottom layer

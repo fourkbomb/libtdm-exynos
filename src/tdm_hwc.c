@@ -133,6 +133,9 @@ _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 
 	output_data = hwc_manager->data;
 
+	if (!hwc_manager->commit_hndl)
+		return;
+
 	/* TODO: must be checked for compatibility with values drm provides which */
 	tv_sec = ts/1000000000;
 	tv_usec = (ts - tv_sec*10000000)/1000;
@@ -392,7 +395,7 @@ android_hwc_layer_set_info(hwc_manager_t hwc_manager, int output_idx, int layer_
 {
 	hwc_layer_1_t *curr_layer;
 
-	curr_layer = hwc_manager->disps_list[output_idx]->hwLayers[layer_idx];
+	curr_layer = &hwc_manager->disps_list[output_idx]->hwLayers[layer_idx];
 
 	curr_layer->sourceCropf.left = (float)info->src_config.pos.x;
 	curr_layer->sourceCropf.top = (float)info->src_config.pos.y;
@@ -410,7 +413,7 @@ android_hwc_layer_set_buff(hwc_manager_t hwc_manager, int output_idx, int layer_
 {
 	hwc_layer_1_t *curr_layer;
 
-	curr_layer = hwc_manager->disps_list[output_idx]->hwLayers[layer_idx];
+	curr_layer = &hwc_manager->disps_list[output_idx]->hwLayers[layer_idx];
 
 	curr_layer->handle = buff;
 }
