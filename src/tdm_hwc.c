@@ -8,7 +8,8 @@
 #include "tdm_hwc.h"
 
 #define MAX_HW_LAYERS (4)
-
+#define INCHES_TO_MM (25.4)
+#define MAX_NUM_CONFIGS (32)
 
 /* stores hwcomposer specific parameters */
 struct _hwc_manager
@@ -28,18 +29,12 @@ struct _hwc_manager
 	 * aka root window */
 	hwc_layer_1_t *fb_target_layer;
 
-	/* this geometry declared by hwcomposer (system base geometry) */
-	uint32_t screen_width;
-	uint32_t screen_height;
-	uint32_t vsyns_period; /* in nanoseconds */
-	uint32_t x_dpi; /* in dot per kinch */
-	uint32_t y_dpi;
-
 	/* this callback will be called ONCE after a vblank event delivery */
 	tdm_output_commit_handler commit_hndl;
 	void *data;
-};
 
+	int max_num_outputs;
+};
 
 static void
 _clean_leayers_list(hwc_manager_t hwc_manager)
@@ -190,21 +185,8 @@ _prepare_fb_device(hwc_manager_t hwc_manager)
 static int
 _prepare_hwc_device(hwc_manager_t hwc_manager)
 {
-	uint32_t configs[32];
-	size_t num_configs = 32;
-	int32_t values[6];
+	int value;
 	int res;
-
-	const uint32_t disp_attrs[] =
-	{
-		HWC_DISPLAY_WIDTH,
-		HWC_DISPLAY_HEIGHT,
-		HWC_DISPLAY_VSYNC_PERIOD,
-		HWC_DISPLAY_DPI_X,
-		HWC_DISPLAY_DPI_Y,
-		HWC_DISPLAY_SECURE,
-		HWC_DISPLAY_NO_ATTRIBUTE,
-	};
 
 	/* some devices may insist that the FB HAL be opened before HWC */
 	_prepare_fb_device(hwc_manager);
@@ -243,42 +225,13 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 	/* always turn vsync off when we start */
 	android_hwc_vsync_event_control(hwc_manager, HWC_DISPLAY_PRIMARY, 0);
 
-	// get available display configurations
-	res = hwc_manager->hwc_dev->getDisplayConfigs(hwc_manager->hwc_dev, HWC_DISPLAY_PRIMARY, configs, &num_configs);
-	if (res) {
-		TDM_ERR("Error: cannot get hwc's configs.");
-		goto fail_2;
-	}
-
-	TDM_DBG("available amount of display configurations: %u.", num_configs);
-
-	res = hwc_manager->hwc_dev->getDisplayAttributes(hwc_manager->hwc_dev, HWC_DISPLAY_PRIMARY, configs[0], disp_attrs, values);
-	if (res) {
-		TDM_ERR("Error: cannot get display attributes.");
-		goto fail_2;
-	}
-
-	hwc_manager->screen_width = values[0];
-	hwc_manager->screen_height = values[1];
-	hwc_manager->vsyns_period = values[2];
-	hwc_manager->x_dpi = values[3];
-	hwc_manager->y_dpi = values[4];
-
-	TDM_DBG("display: %d configuration: 0 attributes:", HWC_DISPLAY_PRIMARY);
-	TDM_DBG(" width:  %d", values[0]);
-	TDM_DBG(" heitht: %d", values[1]);
-	TDM_DBG(" vsync period: %f ms", values[2]/1000000.0);
-	TDM_DBG(" x dpi:  %f", values[3]/1000.0);
-	TDM_DBG(" y dpi:  %f", values[4]/1000.0);
-	TDM_DBG(" is secure: %s.", values[5] ? "yes" : "no");
-
-	res = hwc_manager->hwc_dev->query(hwc_manager->hwc_dev, HWC_BACKGROUND_LAYER_SUPPORTED, values);
+	res = hwc_manager->hwc_dev->query(hwc_manager->hwc_dev, HWC_BACKGROUND_LAYER_SUPPORTED, &value);
 	if (res) {
 		TDM_ERR("Error: cannot get query HWC_BACKGROUND_LAYER_SUPPORTED feature.");
 		goto fail_2;
 	}
 
-	TDM_INFO("Hw composer does%s support HWC_BACKGROUND_LAYER feature.", values[0] ? "":"n't");
+	TDM_INFO("Hw composer does%s support HWC_BACKGROUND_LAYER feature.", value ? "":"n't");
 
 	return 0;
 
@@ -323,6 +276,8 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 		free(hwc_manager);
 		return TDM_ERROR_OPERATION_FAILED;
 	}
+
+	hwc_manager->max_num_outputs = HWC_NUM_DISPLAY_TYPES;
 
 	*hwc_manager_ = hwc_manager;
 
@@ -373,15 +328,126 @@ android_hwc_get_max_hw_layers(hwc_manager_t hwc_manager)
 }
 
 int
-android_hwc_get_max_outputs(hwc_manager_t hwc_manager)
+android_hwc_get_max_num_outputs(hwc_manager_t hwc_manager)
 {
-	return 0;
+	return hwc_manager->max_num_outputs;
+}
+
+static tdm_output_type
+_android_hwc_get_output_type(int output_idx)
+{
+	switch (output_idx) {
+	case HWC_DISPLAY_PRIMARY:
+		return TDM_OUTPUT_TYPE_LVDS;
+	case HWC_DISPLAY_EXTERNAL:
+		return TDM_OUTPUT_TYPE_HDMIA;
+	case HWC_DISPLAY_VIRTUAL:
+		return TDM_OUTPUT_TYPE_VIRTUAL;
+	}
+
+	return TDM_OUTPUT_TYPE_Unknown;
 }
 
 tdm_error
-android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx, tdm_caps_output *caps)
+android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx,
+									tdm_caps_output *caps)
 {
+	uint32_t configs[MAX_NUM_CONFIGS];
+	size_t num_configs = MAX_NUM_CONFIGS;
+	int i;
+	tdm_error ret;
+	int res;
+	const uint32_t disp_attrs[] =
+	{
+		HWC_DISPLAY_WIDTH,
+		HWC_DISPLAY_HEIGHT,
+		HWC_DISPLAY_VSYNC_PERIOD,
+		HWC_DISPLAY_DPI_X,
+		HWC_DISPLAY_DPI_Y,
+		HWC_DISPLAY_NO_ATTRIBUTE,
+	};
+	const int vsize = sizeof(disp_attrs) / sizeof(uint32_t);
+	int32_t values[vsize], dpi_x, dpi_y;
+
+	RETURN_VAL_IF_FAIL(output_idx >= HWC_DISPLAY_PRIMARY &&
+					   output_idx <= HWC_DISPLAY_VIRTUAL,
+					   TDM_ERROR_INVALID_PARAMETER);
+
+	memset(caps, 0, sizeof(tdm_caps_output));
+
+	snprintf(caps->maker, TDM_NAME_LEN, "unknown");
+	snprintf(caps->model, TDM_NAME_LEN, "unknown");
+	snprintf(caps->name, TDM_NAME_LEN, "unknown");
+
+	caps->type = _android_hwc_get_output_type(output_idx);
+
+	/* get available display configurations */
+	res = hwc_manager->hwc_dev->getDisplayConfigs(hwc_manager->hwc_dev,
+												  output_idx,
+												  configs, &num_configs);
+	if (res) {
+		TDM_ERR("Error: cannot get hwc's configs.");
+		ret = TDM_ERROR_OPERATION_FAILED;
+		goto fail;
+	}
+
+	TDM_DBG("available amount of display configurations: %u.", num_configs);
+
+	caps->mode_count = num_configs;
+	caps->modes = calloc(caps->mode_count, sizeof(tdm_output_mode));
+	if (!caps->modes) {
+		ret = TDM_ERROR_OUT_OF_MEMORY;
+		TDM_ERR("alloc failed\n");
+		goto fail;
+	}
+
+	for (i = 0; i < num_configs; ++i) {
+		res = hwc_manager->hwc_dev->getDisplayAttributes(hwc_manager->hwc_dev,
+														 output_idx, configs[i],
+														 disp_attrs, values);
+		if (res) {
+			TDM_ERR("Error: cannot get display attributes.");
+			ret = TDM_ERROR_OPERATION_FAILED;
+			goto fail;
+		}
+		caps->modes[i].hdisplay = values[0];
+		caps->modes[i].vdisplay = values[1];
+		caps->modes[i].vrefresh = values[2];
+
+		TDM_DBG("display: %d configuration: %d attributes:", output_idx, i);
+		TDM_DBG(" width:  %d", values[0]);
+		TDM_DBG(" heitht: %d", values[1]);
+		TDM_DBG(" vsync period: %f ms", values[2]/1000000.0);
+		TDM_DBG(" x dpi:  %f", values[3]/1000.0);
+		TDM_DBG(" y dpi:  %f", values[4]/1000.0);
+	}
+
+	dpi_x = values[3];
+	dpi_y = values[4];
+	/* calculate the physical dimensions of the screen */
+	caps->mmWidth = (caps->modes[i].hdisplay / (dpi_x / 1000.0))
+					* INCHES_TO_MM;
+	caps->mmHeight = (caps->modes[i].vdisplay / (dpi_y / 1000.0))
+					 * INCHES_TO_MM;
+
+	/* -1 because "not defined" */
+	caps->max_w = -1;
+	caps->max_h = -1;
+	caps->min_w = -1;
+	caps->min_h = -1;
+	caps->preferred_align = -1;
+
+	/* the main screen always connected */
+	if (output_idx == HWC_DISPLAY_PRIMARY)
+		caps->status = TDM_OUTPUT_CONN_STATUS_CONNECTED;
+	else
+		caps->status = TDM_OUTPUT_CONN_STATUS_DISCONNECTED;
+
 	return TDM_ERROR_NONE;
+fail:
+	free(caps->modes);
+	memset(caps, 0, sizeof(tdm_caps_output));
+	return ret;
 }
 
 tdm_error

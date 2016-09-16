@@ -39,12 +39,20 @@ typedef struct _tdm_android_display_buffer tdm_android_display_buffer;
 
 typedef struct _hwc_manager* hwc_manager_t;
 
+struct _tdm_android_data
+{
+    tdm_display *dpy;
+
+    hwc_manager_t hwc_manager;
+
+    struct list_head output_list;
+};
+
 struct _tdm_android_output_data
 {
-	tdm_android_data *android_data;
+	struct list_head link;
 
-	int display_type;
-	tdm_output_conn_status status;
+	tdm_android_data *android_data;
 
 	/* to identify output in hwcomposer world */
 	int otput_idx;
@@ -52,16 +60,6 @@ struct _tdm_android_output_data
 	/* data to pass to function which will be called after all changes for this output are applied,
 	 * (more exactly after page-flip) */
 	void *commit_hndl_data;
-};
-
-struct _tdm_android_data
-{
-    tdm_display *dpy;
-
-    hwc_manager_t hwc_manager;
-
-    tdm_android_output_data outputs[HWC_NUM_DISPLAY_TYPES];
-    int num_outputs;
 };
 
 struct _tdm_android_layer_data

@@ -25,7 +25,19 @@ tdm_android_output_update_status(tdm_android_output_data *output_data,
 tdm_error
 android_output_get_capability(tdm_output *output, tdm_caps_output *caps)
 {
-	return TDM_ERROR_NONE;
+	tdm_error ret;
+	tdm_android_output_data *output_data = output;
+	tdm_android_data *android_data;
+
+	RETURN_VAL_IF_FAIL(output_data, TDM_ERROR_INVALID_PARAMETER);
+	RETURN_VAL_IF_FAIL(caps, TDM_ERROR_INVALID_PARAMETER);
+
+	android_data = output_data->android_data;
+
+	ret = android_hwc_get_output_capabilities(android_data->hwc_manager,
+											  output_data->otput_idx, caps);
+
+	return ret;
 }
 
 tdm_layer **

@@ -5,6 +5,7 @@
 #include <tdm_helper.h>
 #include "tdm_android.h"
 
+#include "tdm_hwc.h"
 
 tdm_error
 tdm_android_display_create_layer_list(tdm_android_data *android_data)
@@ -18,47 +19,57 @@ tdm_android_display_update_output_status(tdm_android_data *android_data)
 }
 
 void
-tdm_android_display_destroy_output_list(tdm_android_output_data *outputs, int num)
+tdm_android_display_destroy_output_list(tdm_android_data *android_data)
 {
+	tdm_android_output_data *o = NULL, *oo = NULL;
+
+	if (LIST_IS_EMPTY(&android_data->output_list))
+		return;
+
+	LIST_FOR_EACH_ENTRY_SAFE(o, oo, &android_data->output_list, link) {
+		LIST_DEL(&o->link);
+		free(o);
+	}
+
 	return;
 }
 
 static tdm_error
-tdm_android_display_create_output_list(tdm_android_output_data **outputs,
-									   int *num)
+tdm_android_display_create_output_list(tdm_android_data *android_data)
 {
-	tdm_android_output_data *outputs_data;
-	int i;
+	tdm_android_output_data *output_data;
+	int i, num_outputs;
+	tdm_error ret;
 
-	if (HWC_NUM_DISPLAY_TYPES < 1) {
+	num_outputs = android_hwc_get_max_num_outputs(android_data->hwc_manager);
+
+	if (num_outputs < 1) {
 		TDM_ERR("invalid number of outputs");
-		return TDM_ERROR_OPERATION_FAILED;
+		ret = TDM_ERROR_OPERATION_FAILED;
+		goto failed_create;
 	}
 
-	outputs_data = calloc(HWC_NUM_DISPLAY_TYPES, sizeof(tdm_android_output_data));
-	if (!outputs_data) {
-		TDM_ERR("alloc failed");
-		return TDM_ERROR_OUT_OF_MEMORY;
+	for (i = 0; i < num_outputs; ++i) {
+		output_data = calloc(1, sizeof(tdm_android_output_data));
+		if (!output_data) {
+			TDM_ERR("alloc failed");
+			ret = TDM_ERROR_OUT_OF_MEMORY;
+			goto failed_create;
+		}
+		output_data->otput_idx = i;
+		output_data->android_data = android_data;
+
+		TDM_DBG("output(%d) display_type(%d)", i, i);
+
+		LIST_ADDTAIL(&output_data->link, &android_data->output_list);
 	}
 
-	for (i = 0; i < HWC_NUM_DISPLAY_TYPES; i++) {
-
-		outputs_data[i].display_type = i;
-
-		if (outputs_data[i].display_type == HWC_DISPLAY_PRIMARY)
-			outputs_data[i].status = TDM_OUTPUT_CONN_STATUS_CONNECTED;
-		else
-			outputs_data[i].status = TDM_OUTPUT_CONN_STATUS_DISCONNECTED;
-
-		TDM_DBG("output(%d) display_type(%d)", i, outputs_data[i].display_type);
-	}
-
-	TDM_DBG("output count: %d", HWC_NUM_DISPLAY_TYPES);
-
-	*outputs = outputs_data;
-	*num = HWC_NUM_DISPLAY_TYPES;
+	TDM_DBG("output count: %d", num_outputs);
 
 	return TDM_ERROR_NONE;
+failed_create:
+	tdm_android_display_destroy_output_list(android_data);
+	return ret;
 }
 
 tdm_error
@@ -95,7 +106,7 @@ android_display_get_outputs(tdm_backend_data *bdata, int *count,
                            tdm_error *error)
 {
 	tdm_android_data *android_data = bdata;
-	tdm_android_output_data *outputs_data = NULL;
+	tdm_android_output_data *output_data = NULL;
 	tdm_output **outputs;
 	tdm_error ret;
 	int i;
@@ -103,19 +114,17 @@ android_display_get_outputs(tdm_backend_data *bdata, int *count,
 	RETURN_VAL_IF_FAIL(android_data, NULL);
 	RETURN_VAL_IF_FAIL(count, NULL);
 
-	if (!android_data->num_outputs) {
-		ret = tdm_android_display_create_output_list(&outputs_data, count);
-		if (ret != TDM_ERROR_NONE)
+	if (LIST_IS_EMPTY(&android_data->output_list)) {
+		ret = tdm_android_display_create_output_list(android_data);
+		if (ret != TDM_ERROR_NONE) {
+			*count = 0;
 			goto failed_get;
-
-		android_data->num_outputs = *count;
-		for (i = 0; i < *count; ++i) {
-			android_data->outputs[i] = outputs_data[i];
 		}
-		free(outputs_data);
 	}
 
-	*count = android_data->num_outputs;
+	*count = 0;
+	LIST_FOR_EACH_ENTRY(output_data, &android_data->output_list, link)
+	(*count)++;
 
 	/* will be freed in frontend */
 	outputs = calloc(*count, sizeof(tdm_android_output_data *));
@@ -126,8 +135,9 @@ android_display_get_outputs(tdm_backend_data *bdata, int *count,
 		goto failed_get;
 	}
 
-	for (i = 0; i < *count; ++i)
-		outputs[i] = &android_data->outputs[i];
+	i = 0;
+	LIST_FOR_EACH_ENTRY(output_data, &android_data->output_list, link)
+	outputs[i++] = output_data;
 
 	if (error)
 		*error = TDM_ERROR_NONE;

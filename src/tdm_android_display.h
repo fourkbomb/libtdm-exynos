@@ -4,8 +4,7 @@
 #include "tdm_android.h"
 
 void         tdm_android_display_update_output_status(tdm_android_data *android_data);
-void         tdm_android_display_destroy_output_list(tdm_android_output_data *outputs,
-													 int num);
+void         tdm_android_display_destroy_output_list(tdm_android_data *android_data);
 tdm_error    tdm_android_display_create_layer_list(tdm_android_data *android_data);
 tdm_error    tdm_android_display_set_property(tdm_android_data *android_data,
                                              unsigned int obj_id, unsigned int obj_type,

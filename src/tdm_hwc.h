@@ -12,7 +12,7 @@ void android_hwc_deinit(hwc_manager_t hwc_manager);
 tdm_error android_hwc_vsync_event_control(hwc_manager_t hwc_manager, int output_idx, int state);
 
 int android_hwc_get_max_hw_layers(hwc_manager_t hwc_manager);
-int android_hwc_get_max_outputs(hwc_manager_t hwc_manager);
+int android_hwc_get_max_num_outputs(hwc_manager_t hwc_manager);
 
 tdm_error android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx, tdm_caps_output *caps);
 tdm_error android_hwc_get_layer_capabilities(hwc_manager_t hwc_manager, int layer_idx, tdm_caps_layer *caps);

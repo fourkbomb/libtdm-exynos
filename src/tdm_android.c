@@ -18,6 +18,8 @@ tdm_android_deinit(tdm_backend_data *bdata)
 
 	TDM_INFO("deinit");
 
+	tdm_android_display_destroy_output_list(android_data);
+
 	android_hwc_deinit(android_data->hwc_manager);
 
 	free(android_data);
@@ -53,6 +55,8 @@ tdm_android_init(tdm_display *dpy, tdm_error *error)
 			*error = TDM_ERROR_OUT_OF_MEMORY;
 		return NULL;
 	}
+
+	LIST_INITHEAD(&android_data->output_list);
 
 	memset(&android_func_display, 0, sizeof(android_func_display));
 	android_func_display.display_get_capabilitiy = android_display_get_capabilitiy;
