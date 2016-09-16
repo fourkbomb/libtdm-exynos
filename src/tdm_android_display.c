@@ -7,12 +7,6 @@
 
 #include "tdm_hwc.h"
 
-tdm_error
-tdm_android_display_create_layer_list(tdm_android_data *android_data)
-{
-	return TDM_ERROR_NONE;
-}
-
 void
 tdm_android_display_update_output_status(tdm_android_data *android_data)
 {
@@ -28,6 +22,7 @@ tdm_android_display_destroy_output_list(tdm_android_data *android_data)
 
 	LIST_FOR_EACH_ENTRY_SAFE(o, oo, &android_data->output_list, link) {
 		LIST_DEL(&o->link);
+		tdm_android_output_destroy_layer_list(o);
 		free(o);
 	}
 
@@ -58,6 +53,8 @@ tdm_android_display_create_output_list(tdm_android_data *android_data)
 		}
 		output_data->otput_idx = i;
 		output_data->android_data = android_data;
+
+		LIST_INITHEAD(&output_data->layer_list);
 
 		TDM_DBG("output(%d) display_type(%d)", i, i);
 

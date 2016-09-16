@@ -7,7 +7,7 @@
 
 #include "tdm_hwc.h"
 
-#define MAX_HW_LAYERS (4)
+#define MAX_HW_LAYERS (1)
 #define INCHES_TO_MM (25.4)
 #define MAX_NUM_CONFIGS (32)
 
@@ -34,6 +34,7 @@ struct _hwc_manager
 	void *data;
 
 	int max_num_outputs;
+	int max_num_layers;
 };
 
 static void
@@ -278,6 +279,7 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 	}
 
 	hwc_manager->max_num_outputs = HWC_NUM_DISPLAY_TYPES;
+	hwc_manager->max_num_layers = MAX_HW_LAYERS;
 
 	*hwc_manager_ = hwc_manager;
 
@@ -324,7 +326,7 @@ android_hwc_vsync_event_control(hwc_manager_t hwc_manager, int output_idx, int s
 int
 android_hwc_get_max_hw_layers(hwc_manager_t hwc_manager)
 {
-	return 0;
+	return hwc_manager->max_num_layers;
 }
 
 int

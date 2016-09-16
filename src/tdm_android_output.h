@@ -3,6 +3,9 @@
 
 #include "tdm_android.h"
 
+void
+tdm_android_output_destroy_layer_list(tdm_android_output_data *output_data);
+
 void tdm_android_output_cb_event(int fd, unsigned int sequence,
                                 unsigned int tv_sec, unsigned int tv_usec,
                                 void *user_data);

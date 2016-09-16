@@ -60,6 +60,8 @@ struct _tdm_android_output_data
 	/* data to pass to function which will be called after all changes for this output are applied,
 	 * (more exactly after page-flip) */
 	void *commit_hndl_data;
+
+	struct list_head layer_list;
 };
 
 struct _tdm_android_layer_data

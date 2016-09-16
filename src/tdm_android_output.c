@@ -9,6 +9,59 @@
 #include "tdm_android.h"
 
 void
+tdm_android_output_destroy_layer_list(tdm_android_output_data *output_data)
+{
+	tdm_android_layer_data *l = NULL, *ll = NULL;
+
+	if (LIST_IS_EMPTY(&output_data->layer_list)) {
+		return;
+	}
+
+	LIST_FOR_EACH_ENTRY_SAFE(l, ll, &output_data->layer_list, link) {
+		LIST_DEL(&l->link);
+		free(l);
+	}
+}
+
+static tdm_error
+_tdm_android_output_create_layer_list(tdm_android_output_data *output_data)
+{
+	int i, num_layers;
+	tdm_error ret;
+	tdm_android_layer_data *layer_data;
+	tdm_android_data *android_data = output_data->android_data;
+
+	num_layers = android_hwc_get_max_hw_layers(android_data->hwc_manager);
+
+	if (num_layers < 1) {
+		TDM_ERR("invalid number of layers");
+		ret = TDM_ERROR_OPERATION_FAILED;
+		goto failed_create;
+	}
+
+	for (i = 0; i < num_layers; ++i) {
+		layer_data = calloc(1, sizeof(tdm_android_layer_data));
+		if (!layer_data) {
+			TDM_ERR("alloc failed");
+			ret = TDM_ERROR_OUT_OF_MEMORY;
+			goto failed_create;
+		}
+		layer_data->layer_idx = i;
+		layer_data->output = output_data;
+		layer_data->android_data = android_data;
+
+		LIST_ADDTAIL(&layer_data->link, &output_data->layer_list);
+	}
+
+	TDM_DBG("layers count: %d", num_layers);
+
+	return TDM_ERROR_NONE;
+failed_create:
+	tdm_android_output_destroy_layer_list(output_data);
+	return ret;
+}
+
+void
 tdm_android_output_cb_event(int fd, unsigned int sequence,
                            unsigned int tv_sec, unsigned int tv_usec,
                            void *user_data)
@@ -43,6 +96,47 @@ android_output_get_capability(tdm_output *output, tdm_caps_output *caps)
 tdm_layer **
 android_output_get_layers(tdm_output *output,  int *count, tdm_error *error)
 {
+	tdm_android_output_data *output_data = output;
+	tdm_android_layer_data *layer_data = NULL;
+	tdm_layer **layers;
+	tdm_error ret;
+	int i;
+
+	RETURN_VAL_IF_FAIL(output_data, NULL);
+	RETURN_VAL_IF_FAIL(count, NULL);
+
+	if (LIST_IS_EMPTY(&output_data->layer_list)) {
+		ret = _tdm_android_output_create_layer_list(output_data);
+		if (ret != TDM_ERROR_NONE) {
+			*count = 0;
+			goto failed_get;
+		}
+	}
+
+	*count = 0;
+	LIST_FOR_EACH_ENTRY(layer_data, &output_data->layer_list, link)
+	(*count)++;
+
+	/* will be freed in frontend */
+	layers = calloc(*count, sizeof(tdm_android_layer_data *));
+	if (!layers) {
+		TDM_ERR("failed: alloc memory");
+		*count = 0;
+		ret = TDM_ERROR_OUT_OF_MEMORY;
+		goto failed_get;
+	}
+
+	i = 0;
+	LIST_FOR_EACH_ENTRY(layer_data, &output_data->layer_list, link)
+	layers[i++] = layer_data;
+
+	if (error)
+		*error = TDM_ERROR_NONE;
+
+	return layers;
+failed_get:
+	if (error)
+		*error = ret;
 	return NULL;
 }
 
