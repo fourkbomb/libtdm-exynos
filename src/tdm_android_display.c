@@ -98,6 +98,11 @@ tdm_android_display_find_buffer(tdm_android_data *android_data,
 tdm_error
 android_display_get_capabilitiy(tdm_backend_data *bdata, tdm_caps_display *caps)
 {
+	RETURN_VAL_IF_FAIL(caps, TDM_ERROR_INVALID_PARAMETER);
+
+	/* hwc does not provide the ability to determine max layer count */
+	caps->max_layer_count = -1; /* not defined */
+
 	return TDM_ERROR_NONE;
 }
 
