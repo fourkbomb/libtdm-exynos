@@ -216,12 +216,35 @@ android_output_get_dpms(tdm_output *output, tdm_output_dpms *dpms_value)
 tdm_error
 android_output_set_mode(tdm_output *output, const tdm_output_mode *mode)
 {
-	return TDM_ERROR_NONE;
+	tdm_error ret;
+	tdm_android_output_data *output_data = output;
+	hwc_manager_t hwc_manager;
+
+	RETURN_VAL_IF_FAIL(output_data, TDM_ERROR_INVALID_PARAMETER);
+	RETURN_VAL_IF_FAIL(mode, TDM_ERROR_INVALID_PARAMETER);
+
+	hwc_manager = output_data->android_data->hwc_manager;
+
+	ret = android_hwc_output_set_mode(hwc_manager, output_data->otput_idx,
+									  mode->type);
+
+	if (ret == TDM_ERROR_NONE) {
+		output_data->current_mode = mode;
+	}
+
+	return ret;
 }
 
 tdm_error
 android_output_get_mode(tdm_output *output, const tdm_output_mode **mode)
 {
+	tdm_android_output_data *output_data = output;
+
+	RETURN_VAL_IF_FAIL(output_data, TDM_ERROR_INVALID_PARAMETER);
+	RETURN_VAL_IF_FAIL(mode, TDM_ERROR_INVALID_PARAMETER);
+
+	*mode = output_data->current_mode;
+
 	return TDM_ERROR_NONE;
 }
 

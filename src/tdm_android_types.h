@@ -62,6 +62,8 @@ struct _tdm_android_output_data
 	void *commit_hndl_data;
 
 	struct list_head layer_list;
+
+	const tdm_output_mode *current_mode;
 };
 
 struct _tdm_android_layer_data

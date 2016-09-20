@@ -415,6 +415,8 @@ android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx,
 		caps->modes[i].hdisplay = values[0];
 		caps->modes[i].vdisplay = values[1];
 		caps->modes[i].vrefresh = values[2];
+		/* type is the index of display configuration */
+		caps->modes[i].type = i;
 
 		TDM_DBG("display: %d configuration: %d attributes:", output_idx, i);
 		TDM_DBG(" width:  %d", values[0]);
@@ -505,6 +507,25 @@ android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, v
 	ret = hwc_manager->hwc_dev->set(hwc_manager->hwc_dev, output_idx, hwc_manager->disps_list);
 	if (ret)
 		return TDM_ERROR_OPERATION_FAILED;
+
+	return TDM_ERROR_NONE;
+}
+
+tdm_error
+android_hwc_output_set_mode(hwc_manager_t hwc_manager, int output_idx,
+							unsigned int mode_idx)
+{
+	int res;
+
+	if (hwc_manager->hwc_dev->common.version >= 1040000) {
+		res = hwc_manager->hwc_dev->setActiveConfig(hwc_manager->hwc_dev,
+													output_idx,
+													mode_idx);
+		if (res) {
+			TDM_ERR("Error: cannot set display configuration.");
+			return TDM_ERROR_OPERATION_FAILED;
+		}
+	}
 
 	return TDM_ERROR_NONE;
 }
