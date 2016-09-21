@@ -12,7 +12,16 @@
 tdm_error
 android_layer_get_capability(tdm_layer *layer, tdm_caps_layer *caps)
 {
-	return TDM_ERROR_NONE;
+	tdm_android_layer_data *layer_data = layer;
+	tdm_android_data *android_data;
+
+	RETURN_VAL_IF_FAIL(layer_data, TDM_ERROR_INVALID_PARAMETER);
+	RETURN_VAL_IF_FAIL(caps, TDM_ERROR_INVALID_PARAMETER);
+
+	android_data = layer_data->android_data;
+
+	return android_hwc_get_layer_capabilities(android_data->hwc_manager,
+			layer_data->layer_idx, caps);
 }
 
 tdm_error

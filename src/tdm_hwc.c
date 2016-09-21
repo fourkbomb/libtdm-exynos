@@ -457,6 +457,25 @@ fail:
 tdm_error
 android_hwc_get_layer_capabilities(hwc_manager_t hwc_manager, int layer_idx, tdm_caps_layer *caps)
 {
+	/* TODO: it's temporary code until we'll have figured out how to work
+	 *       with several outputs and layers*/
+
+	caps->capabilities = TDM_LAYER_CAPABILITY_PRIMARY | TDM_LAYER_CAPABILITY_GRAPHIC;
+	caps->zpos = 0;
+
+	/*
+	 * TODO: find a way to know available formats, perhaps via tbm
+	 */
+	caps->format_count = 1;
+	caps->formats = calloc(caps->format_count, sizeof(*caps->formats));
+	if (!caps->formats)
+		return TDM_ERROR_OUT_OF_MEMORY;
+
+	caps->formats[0] = TBM_FORMAT_RGBA8888;
+
+	caps->prop_count = 0;
+	caps->props = NULL;
+
 	return TDM_ERROR_NONE;
 }
 
