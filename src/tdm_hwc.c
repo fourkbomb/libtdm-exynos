@@ -10,6 +10,7 @@
 #define MAX_HW_LAYERS (1)
 #define INCHES_TO_MM (25.4)
 #define MAX_NUM_CONFIGS (32)
+#define MAX_NUM_OUTPUTS (1)
 
 /* stores hwcomposer specific parameters */
 struct _hwc_manager
@@ -278,7 +279,7 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 		return TDM_ERROR_OPERATION_FAILED;
 	}
 
-	hwc_manager->max_num_outputs = HWC_NUM_DISPLAY_TYPES;
+	hwc_manager->max_num_outputs = MAX_NUM_OUTPUTS;
 	hwc_manager->max_num_layers = MAX_HW_LAYERS;
 
 	*hwc_manager_ = hwc_manager;
@@ -429,9 +430,9 @@ android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx,
 	dpi_x = values[3];
 	dpi_y = values[4];
 	/* calculate the physical dimensions of the screen */
-	caps->mmWidth = (caps->modes[i].hdisplay / (dpi_x / 1000.0))
+	caps->mmWidth = (caps->modes[i - 1].hdisplay / (dpi_x / 1000.0))
 					* INCHES_TO_MM;
-	caps->mmHeight = (caps->modes[i].vdisplay / (dpi_y / 1000.0))
+	caps->mmHeight = (caps->modes[i - 1].vdisplay / (dpi_y / 1000.0))
 					 * INCHES_TO_MM;
 
 	/* -1 because "not defined" */
