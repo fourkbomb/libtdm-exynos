@@ -53,6 +53,7 @@ tdm_android_display_create_output_list(tdm_android_data *android_data)
 		}
 		output_data->otput_idx = i;
 		output_data->android_data = android_data;
+		output_data->dpms_value = TDM_OUTPUT_DPMS_OFF;
 
 		LIST_INITHEAD(&output_data->layer_list);
 

@@ -204,12 +204,30 @@ android_output_set_commit_handler(tdm_output *output,
 tdm_error
 android_output_set_dpms(tdm_output *output, tdm_output_dpms dpms_value)
 {
-	return TDM_ERROR_NONE;
+	tdm_android_output_data *output_data = output;
+	tdm_error ret;
+
+	RETURN_VAL_IF_FAIL(output_data, TDM_ERROR_INVALID_PARAMETER);
+
+	ret = android_hwc_output_set_dpms(output_data->android_data->hwc_manager,
+									  output_data->otput_idx, dpms_value);
+
+	if (ret == TDM_ERROR_NONE)
+		output_data->dpms_value = dpms_value;
+
+	return ret;
 }
 
 tdm_error
 android_output_get_dpms(tdm_output *output, tdm_output_dpms *dpms_value)
 {
+	tdm_android_output_data *output_data = output;
+
+	RETURN_VAL_IF_FAIL(output_data, TDM_ERROR_INVALID_PARAMETER);
+	RETURN_VAL_IF_FAIL(dpms_value, TDM_ERROR_INVALID_PARAMETER);
+
+	*dpms_value = output_data->dpms_value;
+
 	return TDM_ERROR_NONE;
 }
 

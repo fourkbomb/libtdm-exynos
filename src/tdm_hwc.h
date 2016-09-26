@@ -27,4 +27,8 @@ tdm_error
 android_hwc_output_set_mode(hwc_manager_t hwc_manager, int output_idx,
 							unsigned int mode_idx);
 
+tdm_error
+android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
+							tdm_output_dpms dpms_value);
+
 #endif /* _TDM_HWC_H_ */

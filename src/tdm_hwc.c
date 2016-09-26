@@ -549,3 +549,68 @@ android_hwc_output_set_mode(hwc_manager_t hwc_manager, int output_idx,
 
 	return TDM_ERROR_NONE;
 }
+
+tdm_error
+android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
+							tdm_output_dpms dpms_value)
+{
+	int ret;
+	uint32_t hwc_version;
+
+	hwc_version = hwc_manager->hwc_dev->common.version & 0xFFFF0000;
+
+	switch (dpms_value) {
+	case TDM_OUTPUT_DPMS_ON:
+		if (hwc_version >= 0x1040000) {
+			ret = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
+													 output_idx,
+													 HWC_POWER_MODE_NORMAL);
+			if (ret)
+				goto fail;
+			break;
+		}
+		ret = hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, output_idx, 0);
+		if (ret)
+			goto fail;
+		break;
+	case TDM_OUTPUT_DPMS_STANDBY:
+		if (hwc_version >= 0x1040000) {
+			ret = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
+													 output_idx,
+													 HWC_POWER_MODE_DOZE);
+			if (ret)
+				goto fail;
+			break;
+		}
+	case TDM_OUTPUT_DPMS_SUSPEND:
+		if (hwc_version >= 0x1040000) {
+			ret = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
+													 output_idx,
+													 HWC_POWER_MODE_DOZE_SUSPEND);
+			if (ret)
+				goto fail;
+			break;
+		}
+	case TDM_OUTPUT_DPMS_OFF:
+		if (hwc_version >= 0x1040000) {
+			ret = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
+													 output_idx,
+													 HWC_POWER_MODE_OFF);
+			if (ret)
+				goto fail;
+			break;
+		}
+		ret = hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, output_idx, 1);
+		if (ret)
+			goto fail;
+		break;
+	default:
+		return TDM_ERROR_INVALID_PARAMETER;
+	}
+
+	return TDM_ERROR_NONE;
+
+fail:
+	TDM_ERR("Error: cannot set the display screen power state.");
+	return TDM_ERROR_OPERATION_FAILED;
+}

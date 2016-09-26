@@ -64,6 +64,7 @@ struct _tdm_android_output_data
 	struct list_head layer_list;
 
 	const tdm_output_mode *current_mode;
+	tdm_output_dpms dpms_value;
 };
 
 struct _tdm_android_layer_data
