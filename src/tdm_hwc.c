@@ -526,7 +526,9 @@ android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, v
 
 	hwc_manager->data = data;
 
-	ret = hwc_manager->hwc_dev->set(hwc_manager->hwc_dev, output_idx, hwc_manager->disps_list);
+	ret = hwc_manager->hwc_dev->set(hwc_manager->hwc_dev,
+									hwc_manager->max_num_outputs,
+									hwc_manager->disps_list);
 	if (ret)
 		return TDM_ERROR_OPERATION_FAILED;
 
@@ -538,8 +540,11 @@ android_hwc_output_set_mode(hwc_manager_t hwc_manager, int output_idx,
 							unsigned int mode_idx)
 {
 	int res;
+	uint32_t hwc_version;
 
-	if (hwc_manager->hwc_dev->common.version >= 1040000) {
+	hwc_version = hwc_manager->hwc_dev->common.version & 0xFFFF0000;
+
+	if (hwc_version >= 0x1040000) {
 		res = hwc_manager->hwc_dev->setActiveConfig(hwc_manager->hwc_dev,
 													output_idx,
 													mode_idx);
