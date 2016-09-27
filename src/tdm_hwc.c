@@ -388,7 +388,7 @@ android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx,
 	res = hwc_manager->hwc_dev->getDisplayConfigs(hwc_manager->hwc_dev,
 												  output_idx,
 												  configs, &num_configs);
-	if (res) {
+	if (res || num_configs < 1) {
 		TDM_ERR("Error: cannot get hwc's configs.");
 		ret = TDM_ERROR_OPERATION_FAILED;
 		goto fail;
@@ -416,8 +416,8 @@ android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx,
 		caps->modes[i].hdisplay = values[0];
 		caps->modes[i].vdisplay = values[1];
 		caps->modes[i].vrefresh = values[2];
-		/* type is the index of display configuration */
-		caps->modes[i].type = i;
+		/* flags is the index of display configuration */
+		caps->modes[i].flags = i;
 
 		TDM_DBG("display: %d configuration: %d attributes:", output_idx, i);
 		TDM_DBG(" width:  %d", values[0]);
@@ -426,6 +426,8 @@ android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx,
 		TDM_DBG(" x dpi:  %f", values[3]/1000.0);
 		TDM_DBG(" y dpi:  %f", values[4]/1000.0);
 	}
+
+	caps->modes[0].type = TDM_OUTPUT_MODE_TYPE_PREFERRED;
 
 	dpi_x = values[3];
 	dpi_y = values[4];

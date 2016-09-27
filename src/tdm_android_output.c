@@ -244,7 +244,7 @@ android_output_set_mode(tdm_output *output, const tdm_output_mode *mode)
 	hwc_manager = output_data->android_data->hwc_manager;
 
 	ret = android_hwc_output_set_mode(hwc_manager, output_data->otput_idx,
-									  mode->type);
+									  mode->flags);
 
 	if (ret == TDM_ERROR_NONE) {
 		output_data->current_mode = mode;
