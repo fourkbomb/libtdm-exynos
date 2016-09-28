@@ -12,6 +12,29 @@
 #define MAX_NUM_CONFIGS (32)
 #define MAX_NUM_OUTPUTS (1)
 
+/* TODO: yes this is dirty hack,
+ *       but it will take some time to fix it,
+ *       so, at least now, we have that we have :-) */
+extern pthread_mutex_t tdm_mutex_check_lock;
+extern int tdm_mutex_locked;
+
+/* these macros were copied from tdm_private.h */
+#define _pthread_mutex_unlock(l) \
+	do { \
+		pthread_mutex_lock(&tdm_mutex_check_lock); \
+		tdm_mutex_locked = 0; \
+		pthread_mutex_unlock(&tdm_mutex_check_lock); \
+		pthread_mutex_unlock(l); \
+	} while (0)
+#define _pthread_mutex_lock(l) \
+	do { \
+		pthread_mutex_lock(l); \
+		pthread_mutex_lock(&tdm_mutex_check_lock); \
+		tdm_mutex_locked = 1; \
+		pthread_mutex_unlock(&tdm_mutex_check_lock); \
+	} while (0)
+
+
 /* stores hwcomposer specific parameters */
 struct _hwc_manager
 {
@@ -122,6 +145,7 @@ _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 {
 	tdm_android_output_data *output_data;
 	hwc_manager_t hwc_manager;
+	pthread_mutex_t *tdm_mutex;
 	int64_t tv_sec, tv_usec;
 
 	TDM_DBG("######################  hwc_vsync callback: ts: %lld.  ######################", ts);
@@ -137,11 +161,19 @@ _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 	tv_sec = ts/1000000000;
 	tv_usec = (ts - tv_sec*10000000)/1000;
 
+	/* look to the declaration of _tdm_private_display structure */
+	tdm_mutex = (pthread_mutex_t *)output_data->android_data->dpy;
+
+	/* as we don't use tdm_thread we gotta make lock/unlock here, yes it's dirty hack :-) */
+	_pthread_mutex_lock(tdm_mutex);
+
 	/* TODO: what about inter-thread synchronization ?*/
 	/* TODO: what about sequence argument ? */
 	/* TODO: it's temporary hack: we just bypass tdm_thread... write data to pipe by self... */
 	hwc_manager->commit_hndl(output_data, 0, (unsigned int)tv_sec, (unsigned int)tv_usec,
 			output_data->commit_hndl_data);
+
+	_pthread_mutex_unlock(tdm_mutex);
 }
 
 /* callback */
@@ -284,6 +316,8 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 
 	*hwc_manager_ = hwc_manager;
 
+	/* tdm requires set_dpms with TDM_OUTPUT_DPMS_ON arg to be called before commit call,
+	 * so we can turn off screen here, it will be turned on request from set_dpms function */
 	TDM_INFO("turn off a screen...");
 	hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, HWC_DISPLAY_PRIMARY, 1);
 
