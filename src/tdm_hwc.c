@@ -4,6 +4,7 @@
 
 #include <hardware/hwcomposer.h>
 #include <hardware/fb.h>	/* Note: some devices may insist that the FB HAL be opened before HWC */
+#include <sync/sync.h>
 
 #include "tdm_hwc.h"
 
@@ -11,6 +12,12 @@
 #define INCHES_TO_MM (25.4)
 #define MAX_NUM_CONFIGS (32)
 #define MAX_NUM_OUTPUTS (1)
+
+/* TODO: we have the next problem:
+ *       - hwcomposer doesn't differ vblank and commit events,
+ *       - output_set_commit_handler is called before
+ *         output_commit,
+ */
 
 /* TODO: yes this is dirty hack,
  *       but it will take some time to fix it,
@@ -148,13 +155,13 @@ _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 	pthread_mutex_t *tdm_mutex;
 	int64_t tv_sec, tv_usec;
 
-	TDM_DBG("######################  hwc_vsync callback: ts: %lld.  ######################", ts);
-
 	hwc_manager = container_of(procs, hwc_manager, hwc_callbacks);
 
 	output_data = hwc_manager->data;
 
-	if (!hwc_manager->commit_hndl)
+	/* TODO: this check must be under some lock/unlock mechanism,
+	 * 	     because commit_hndl is set from another thread */
+	if (!hwc_manager->commit_hndl || !output_data || !output_data->commit_hndl_data)
 		return;
 
 	/* TODO: must be checked for compatibility with values drm provides which */
@@ -250,14 +257,14 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 	TDM_INFO("hwc version: %x.", hwc_manager->hwc_dev->common.version & 0xFFFF0000);
 	TDM_INFO("hwc module api version: %hu.", hwc_manager->hwc_dev->common.module->module_api_version);
 
+	/* always turn vsync off when we start */
+	android_hwc_vsync_event_control(hwc_manager, HWC_DISPLAY_PRIMARY, 0);
+
 	/* register hwc callback set */
 	hwc_manager->hwc_callbacks.invalidate = _hwc_invalidate_cb;
 	hwc_manager->hwc_callbacks.vsync = _hwc_vsync_cb;
 	hwc_manager->hwc_callbacks.hotplug = _hwc_hotplug_cb;
 	hwc_manager->hwc_dev->registerProcs(hwc_manager->hwc_dev, &hwc_manager->hwc_callbacks);
-
-	/* always turn vsync off when we start */
-	android_hwc_vsync_event_control(hwc_manager, HWC_DISPLAY_PRIMARY, 0);
 
 	res = hwc_manager->hwc_dev->query(hwc_manager->hwc_dev, HWC_BACKGROUND_LAYER_SUPPORTED, &value);
 	if (res) {
@@ -553,16 +560,45 @@ android_hwc_output_set_commit_handler(hwc_manager_t hwc_manager, int output_idx,
 tdm_error
 android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, void *data)
 {
+	int old_retire_fd;
+	int old_release_fd;
 	int ret;
 
 	/* TODO: some work for synchronize issues (hwc access to buffer) must be done */
 	/* TODO: some work to make ability to use tdm_commit in sync modes (now only async mode is supplied) */
+	/* TODO: vblank isn't synchronized with result of `set` call, it's very bad... */
 
 	hwc_manager->data = data;
+
+	/* fd for sync fence object signaled when composition is retired
+	 * (after pageflip event) */
+	old_retire_fd = hwc_manager->disps_list[output_idx]->retireFenceFd;
+
+	/* fd for sync fence object signaled when hwc finished read from buffer */
+	old_release_fd = hwc_manager->fb_target_layer->releaseFenceFd;
+
+	/* must be -1 before prepare/set */
+	hwc_manager->disps_list[output_idx]->retireFenceFd = -1;
+
+	/* we've drawn yet everything */
+	hwc_manager->fb_target_layer->acquireFenceFd = -1;
 
 	ret = hwc_manager->hwc_dev->set(hwc_manager->hwc_dev,
 									hwc_manager->max_num_outputs,
 									hwc_manager->disps_list);
+
+	/* wait until vblank event occurs
+	 * we wait vblank event for frame which has been set by PREVIOUS set call !!! */
+	if (old_retire_fd != -1) {
+		sync_wait(old_retire_fd, -1);
+		close(old_retire_fd);
+	}
+
+	if (old_release_fd != -1) {
+		sync_wait(old_release_fd, -1);
+		close(old_release_fd);
+	}
+
 	if (ret)
 		return TDM_ERROR_OPERATION_FAILED;
 
