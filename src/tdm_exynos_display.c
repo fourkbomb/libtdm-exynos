@@ -19,6 +19,7 @@ _tdm_exynos_display_create_layer_list_type(tdm_exynos_data *exynos_data)
 		tdm_exynos_layer_data *layer_data;
 		drmModePlanePtr plane;
 		unsigned int type = 0;
+		int output_find = 0;
 
 		plane = drmModeGetPlane(exynos_data->drm_fd, exynos_data->plane_res->planes[i]);
 		if (!plane) {
@@ -44,11 +45,13 @@ _tdm_exynos_display_create_layer_list_type(tdm_exynos_data *exynos_data)
 		}
 
 		LIST_FOR_EACH_ENTRY(output_data, &exynos_data->output_list, link) {
-			if (plane->possible_crtcs & (1 << output_data->pipe))
+			if (plane->possible_crtcs & (1 << output_data->pipe)) {
+				output_find = 1;
 				break;
+			}
 		}
 
-		if (!output_data) {
+		if (!output_find) {
 			TDM_ERR("plane(%d) couldn't found proper output", plane->plane_id);
 			drmModeFreePlane(plane);
 			free(layer_data);
@@ -107,6 +110,7 @@ _tdm_exynos_display_create_layer_list_immutable_zpos(tdm_exynos_data *exynos_dat
 		tdm_exynos_layer_data *layer_data;
 		drmModePlanePtr plane;
 		unsigned int type = 0, zpos = 0;
+		int output_find = 0;
 
 		plane = drmModeGetPlane(exynos_data->drm_fd, exynos_data->plane_res->planes[i]);
 		if (!plane) {
@@ -142,11 +146,13 @@ _tdm_exynos_display_create_layer_list_immutable_zpos(tdm_exynos_data *exynos_dat
 		}
 
 		LIST_FOR_EACH_ENTRY(output_data, &exynos_data->output_list, link) {
-			if (plane->possible_crtcs & (1 << output_data->pipe))
+			if (plane->possible_crtcs & (1 << output_data->pipe)) {
+				output_find = 1;
 				break;
+			}
 		}
 
-		if (!output_data) {
+		if (!output_find) {
 			TDM_ERR("plane(%d) couldn't found proper output", plane->plane_id);
 			drmModeFreePlane(plane);
 			free(layer_data);
