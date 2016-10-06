@@ -10,6 +10,7 @@ BuildRequires: pkgconfig(libdrm)
 BuildRequires: pkgconfig(libdrm_exynos)
 BuildRequires: pkgconfig(libudev)
 BuildRequires: pkgconfig(libtdm)
+ExclusiveArch: %{arm} aarch64
 
 %description
 Back-End library of Tizen Display Manager Exynos : libtdm-mgr Exynos library
