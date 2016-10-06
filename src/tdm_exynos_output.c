@@ -274,7 +274,10 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 
 			*do_waitvblank = 1;
 		} else {
+			tbm_surface_info_s info;
+			int ret;
 			tdm_exynos_event_data *event_data = calloc(1, sizeof(tdm_exynos_event_data));
+
 			if (!event_data) {
 				TDM_ERR("alloc failed");
 				return TDM_ERROR_OUT_OF_MEMORY;
@@ -286,6 +289,10 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 			TDM_DBG("PageFlip: drm_fd(%d) crtc_id(%d) fb_id(%d)",
 					exynos_data->drm_fd, output_data->crtc_id,
 					layer_data->display_buffer->fb_id);
+
+			ret = tbm_surface_map(layer_data->display_buffer->buffer, TBM_SURF_OPTION_READ, &info);
+			if (ret == TBM_SURFACE_ERROR_NONE)
+				tbm_surface_unmap(layer_data->display_buffer->buffer);
 
 			if (drmModePageFlip(exynos_data->drm_fd, output_data->crtc_id,
 								layer_data->display_buffer->fb_id, DRM_MODE_PAGE_FLIP_EVENT, event_data)) {
