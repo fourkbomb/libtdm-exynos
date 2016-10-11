@@ -2,6 +2,8 @@
 #include "config.h"
 #endif
 
+#include <pthread.h>
+
 #include <hardware/hwcomposer.h>
 #include <hardware/fb.h>	/* Note: some devices may insist that the FB HAL be opened before HWC */
 #include <sync/sync.h>
@@ -13,11 +15,6 @@
 #define MAX_NUM_CONFIGS (32)
 #define MAX_NUM_OUTPUTS (1)
 
-/* TODO: we have the next problem:
- *       - hwcomposer doesn't differ vblank and commit events,
- *       - output_set_commit_handler is called before
- *         output_commit,
- */
 
 /* TODO: yes this is dirty hack,
  *       but it will take some time to fix it,
@@ -66,6 +63,15 @@ struct _hwc_manager
 
 	int max_num_outputs;
 	int max_num_layers;
+
+	/* to synchronize page-flip scheduling with vblank handling */
+	pthread_mutex_t hwc_mutex;
+
+	/* an access to the next fields must be under a lock/unlock mechanism */
+
+	/* I ASSUME, after hwc's 'set' returns, page flip is scheduled and the next vblank,
+	 * AFTER this happened, is page-flip event vblank. */
+	int page_flip_scheduled;
 };
 
 static void
@@ -157,12 +163,24 @@ _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 
 	hwc_manager = container_of(procs, hwc_manager, hwc_callbacks);
 
-	output_data = hwc_manager->data;
+	pthread_mutex_lock(&hwc_manager->hwc_mutex);
 
-	/* TODO: this check must be under some lock/unlock mechanism,
-	 * 	     because commit_hndl is set from another thread */
-	if (!hwc_manager->commit_hndl || !output_data || !output_data->commit_hndl_data)
+	/* drop vblanks which aren't page-flip events.
+	 * to match TDM requirement for backend implementation:
+	 * "After all change of a output object are applied, a user commit handler
+	 * will be called." */
+	if (!hwc_manager->page_flip_scheduled) {
+		pthread_mutex_unlock(&hwc_manager->hwc_mutex);
 		return;
+	}
+
+	/* we can unlock mutex here, but to avoid overhead (unlock here and locking before
+	 * get access to 'page_flip_scheduled' field) we don't do it
+	 *
+	 * Note: access to 'data' and 'commit_hndl' fields may not be under lock/unlock mechanism
+	 *       due to way TDM is used, as I think. */
+
+	output_data = hwc_manager->data;
 
 	/* TODO: must be checked for compatibility with values drm provides which */
 	tv_sec = ts/1000000000;
@@ -174,11 +192,14 @@ _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 	/* as we don't use tdm_thread we gotta make lock/unlock here, yes it's dirty hack :-) */
 	_pthread_mutex_lock(tdm_mutex);
 
-	/* TODO: what about inter-thread synchronization ?*/
 	/* TODO: what about sequence argument ? */
 	/* TODO: it's temporary hack: we just bypass tdm_thread... write data to pipe by self... */
 	hwc_manager->commit_hndl(output_data, 0, (unsigned int)tv_sec, (unsigned int)tv_usec,
 			output_data->commit_hndl_data);
+
+	hwc_manager->page_flip_scheduled = 0;
+
+	pthread_mutex_unlock(&hwc_manager->hwc_mutex);
 
 	_pthread_mutex_unlock(tdm_mutex);
 }
@@ -296,6 +317,13 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 	hwc_manager = calloc(1, sizeof(struct _hwc_manager));
 	if (!hwc_manager)
 		return TDM_ERROR_OPERATION_FAILED;
+
+	if (pthread_mutex_init(&hwc_manager->hwc_mutex, NULL)) {
+		TDM_ERR("mutex init failed." );
+		free(hwc_manager);
+
+		return TDM_ERROR_OPERATION_FAILED;
+	}
 
 	ret = _prepare_hwc_device(hwc_manager);
 	if (ret)
@@ -566,12 +594,10 @@ android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, v
 
 	/* TODO: some work for synchronize issues (hwc access to buffer) must be done */
 	/* TODO: some work to make ability to use tdm_commit in sync modes (now only async mode is supplied) */
-	/* TODO: vblank isn't synchronized with result of `set` call, it's very bad... */
 
 	hwc_manager->data = data;
 
-	/* fd for sync fence object signaled when composition is retired
-	 * (after pageflip event) */
+	/* fd for sync fence object signaled when composition is retired (after pageflip event) */
 	old_retire_fd = hwc_manager->disps_list[output_idx]->retireFenceFd;
 
 	/* fd for sync fence object signaled when hwc finished read from buffer */
@@ -583,9 +609,17 @@ android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, v
 	/* we've drawn yet everything */
 	hwc_manager->fb_target_layer->acquireFenceFd = -1;
 
+	pthread_mutex_lock(&hwc_manager->hwc_mutex);
+
 	ret = hwc_manager->hwc_dev->set(hwc_manager->hwc_dev,
 									hwc_manager->max_num_outputs,
 									hwc_manager->disps_list);
+
+	hwc_manager->page_flip_scheduled = 1;
+
+	pthread_mutex_unlock(&hwc_manager->hwc_mutex);
+
+	/* TODO: waiting in commit, I think it's bad idea... */
 
 	/* wait until vblank event occurs
 	 * we wait vblank event for frame which has been set by PREVIOUS set call !!! */
