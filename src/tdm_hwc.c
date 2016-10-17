@@ -57,10 +57,6 @@ struct _hwc_manager
 	 * aka root window */
 	hwc_layer_1_t *fb_target_layer;
 
-	/* this callback will be called ONCE after a vblank event delivery */
-	tdm_output_commit_handler commit_hndl;
-	void *data;
-
 	int max_num_outputs;
 	int max_num_layers;
 
@@ -72,6 +68,18 @@ struct _hwc_manager
 	/* I ASSUME, after hwc's 'set' returns, page flip is scheduled and the next vblank,
 	 * AFTER this happened, is page-flip event vblank. */
 	int page_flip_scheduled;
+
+	/* this callback will be called ONCE after a vblank event delivery */
+	tdm_output_commit_handler commit_hndl;
+	tdm_output *output;
+
+	/* data to pass to function 'commit_hndl' which will be called after all changes
+	 * for output 'output' are applied, (more exactly after page-flip) */
+	void *user_data;
+
+	/* sync fence object for composition which is currently active or
+	 * recently(if we're in vblank handler) has been retired (finished) */
+	int retire_fence_fd;
 };
 
 static void
@@ -174,17 +182,14 @@ _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 		return;
 	}
 
-	/* we can unlock mutex here, but to avoid overhead (unlock here and locking before
-	 * get access to 'page_flip_scheduled' field) we don't do it
-	 *
-	 * Note: access to 'data' and 'commit_hndl' fields may not be under lock/unlock mechanism
-	 *       due to way TDM is used, as I think. */
-
-	output_data = hwc_manager->data;
+	/* close fd referred to the sync fence object triggered after page-flip event occurred */
+	close(hwc_manager->retire_fence_fd);
 
 	/* TODO: must be checked for compatibility with values drm provides which */
 	tv_sec = ts/1000000000;
 	tv_usec = (ts - tv_sec*10000000)/1000;
+
+	output_data = hwc_manager->output;
 
 	/* look to the declaration of _tdm_private_display structure */
 	tdm_mutex = (pthread_mutex_t *)output_data->android_data->dpy;
@@ -194,14 +199,14 @@ _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 
 	/* TODO: what about sequence argument ? */
 	/* TODO: it's temporary hack: we just bypass tdm_thread... write data to pipe by self... */
-	hwc_manager->commit_hndl(output_data, 0, (unsigned int)tv_sec, (unsigned int)tv_usec,
-			output_data->commit_hndl_data);
+	hwc_manager->commit_hndl(hwc_manager->output, 0, (unsigned int)tv_sec, (unsigned int)tv_usec,
+			hwc_manager->user_data);
+
+	_pthread_mutex_unlock(tdm_mutex);
 
 	hwc_manager->page_flip_scheduled = 0;
 
 	pthread_mutex_unlock(&hwc_manager->hwc_mutex);
-
-	_pthread_mutex_unlock(tdm_mutex);
 }
 
 /* callback */
@@ -582,59 +587,78 @@ android_hwc_layer_set_buff(hwc_manager_t hwc_manager, int output_idx, int layer_
 void
 android_hwc_output_set_commit_handler(hwc_manager_t hwc_manager, int output_idx, tdm_output_commit_handler hndl)
 {
+	pthread_mutex_lock(&hwc_manager->hwc_mutex);
+
 	hwc_manager->commit_hndl = hndl;
+
+	pthread_mutex_unlock(&hwc_manager->hwc_mutex);
 }
 
 tdm_error
-android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, void *data)
+android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, tdm_output *output, void *user_data)
 {
-	int old_retire_fd;
-	int old_release_fd;
 	int ret;
+	int fence;
 
 	/* TODO: some work for synchronize issues (hwc access to buffer) must be done */
 	/* TODO: some work to make ability to use tdm_commit in sync modes (now only async mode is supplied) */
 
-	hwc_manager->data = data;
+	pthread_mutex_lock(&hwc_manager->hwc_mutex);
 
-	/* fd for sync fence object signaled when composition is retired (after pageflip event) */
-	old_retire_fd = hwc_manager->disps_list[output_idx]->retireFenceFd;
+	/* to prevent several commit requests between two adjacent vblanks, such situation can occurs
+	 * only in case of incorrect use-case of TDM(I think TDM user must queue all commit request by self),
+	 * however we make this check, for safety */
+	if (hwc_manager->page_flip_scheduled) {
 
-	/* fd for sync fence object signaled when hwc finished read from buffer */
-	old_release_fd = hwc_manager->fb_target_layer->releaseFenceFd;
+		TDM_WRN("Seem it's an incorrect use-case of TDM !!!");
+
+		/* only for an attempt to apply several commit requests before first vblank events occurs */
+		if (hwc_manager->retire_fence_fd == -1) {
+			pthread_mutex_unlock(&hwc_manager->hwc_mutex);
+			usleep(17000); /* at this moment we haven't any fences we can wait on, so... */
+			pthread_mutex_lock(&hwc_manager->hwc_mutex);
+		}
+		else {
+			/* TODO: what if the user of this backend skips the frame, thus 'retire_fence_fd' has been
+			 *       triggered yet, so sync_wait returns immediately, it leads to the situation where we'll
+			 *       schedule several page-flips between two adjacent vblanks. */
+			fence = dup(hwc_manager->retire_fence_fd);
+			pthread_mutex_unlock(&hwc_manager->hwc_mutex);
+			sync_wait(fence, -1);
+			close(fence);
+			/* TODO: what if this thread grabs the lock before thread vblank handler is called from?
+			 * 	     it's ERROR */
+			pthread_mutex_lock(&hwc_manager->hwc_mutex);
+		}
+	}
+
+	/* fd for sync fence object signaled when composition is retired (after 'SECOND' page-flip event) */
+	hwc_manager->retire_fence_fd = hwc_manager->disps_list[output_idx]->retireFenceFd;
+
+	hwc_manager->disps_list[output_idx]->outbuf = NULL;
+	hwc_manager->disps_list[output_idx]->outbufAcquireFenceFd = -1;
 
 	/* must be -1 before prepare/set */
 	hwc_manager->disps_list[output_idx]->retireFenceFd = -1;
+	hwc_manager->fb_target_layer->releaseFenceFd = -1;
 
 	/* we've drawn yet everything */
 	hwc_manager->fb_target_layer->acquireFenceFd = -1;
 
-	pthread_mutex_lock(&hwc_manager->hwc_mutex);
+	hwc_manager->output = output;
+	hwc_manager->user_data = user_data;
 
 	ret = hwc_manager->hwc_dev->set(hwc_manager->hwc_dev,
 									hwc_manager->max_num_outputs,
 									hwc_manager->disps_list);
+	if (ret) {
+		pthread_mutex_unlock(&hwc_manager->hwc_mutex);
+		return TDM_ERROR_OPERATION_FAILED;
+	}
 
 	hwc_manager->page_flip_scheduled = 1;
 
 	pthread_mutex_unlock(&hwc_manager->hwc_mutex);
-
-	/* TODO: waiting in commit, I think it's bad idea... */
-
-	/* wait until vblank event occurs
-	 * we wait vblank event for frame which has been set by PREVIOUS set call !!! */
-	if (old_retire_fd != -1) {
-		sync_wait(old_retire_fd, -1);
-		close(old_retire_fd);
-	}
-
-	if (old_release_fd != -1) {
-		sync_wait(old_release_fd, -1);
-		close(old_release_fd);
-	}
-
-	if (ret)
-		return TDM_ERROR_OPERATION_FAILED;
 
 	return TDM_ERROR_NONE;
 }

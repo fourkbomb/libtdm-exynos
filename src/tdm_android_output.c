@@ -178,9 +178,7 @@ android_output_commit(tdm_output *output, int sync, void *user_data)
 	output_data = output;
 	hwc_manager = output_data->android_data->hwc_manager;
 
-	output_data->commit_hndl_data = user_data;
-
-	return android_hwc_output_commit(hwc_manager, output_data->otput_idx, sync, output);
+	return android_hwc_output_commit(hwc_manager, output_data->otput_idx, sync, output, user_data);
 }
 
 tdm_error

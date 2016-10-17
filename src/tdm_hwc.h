@@ -21,7 +21,7 @@ void android_hwc_layer_set_info(hwc_manager_t hwc_manager, int output_idx, int l
 void android_hwc_layer_set_buff(hwc_manager_t hwc_manager, int output_idx, int layer_idx, buffer_handle_t buff);
 
 void android_hwc_output_set_commit_handler(hwc_manager_t hwc_manager, int output_idx, tdm_output_commit_handler hndl);
-tdm_error android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, void *data);
+tdm_error android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, tdm_output *output, void *user_data);
 
 tdm_error
 android_hwc_output_set_mode(hwc_manager_t hwc_manager, int output_idx,

@@ -57,10 +57,6 @@ struct _tdm_android_output_data
 	/* to identify output in hwcomposer world */
 	int otput_idx;
 
-	/* data to pass to function which will be called after all changes for this output are applied,
-	 * (more exactly after page-flip) */
-	void *commit_hndl_data;
-
 	struct list_head layer_list;
 
 	const tdm_output_mode *current_mode;
