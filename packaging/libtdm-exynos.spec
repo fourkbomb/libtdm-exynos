@@ -22,10 +22,6 @@ Back-End library of Tizen Display Manager Exynos : libtdm-mgr Exynos library
 cp %{SOURCE1001} .
 
 %build
-%if "%{?profile}" == "wearable"
-export CFLAGS+=" -D_F_WEARABLE_PROFILE_ "
-%endif
-
 %reconfigure --prefix=%{_prefix} --libdir=%{_libdir}  --disable-static \
 %if "%_repository" == "target-circle"
              --enable-tiled-format \
