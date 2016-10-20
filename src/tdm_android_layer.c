@@ -18,7 +18,7 @@ android_layer_get_capability(tdm_layer *layer, tdm_caps_layer *caps)
 	RETURN_VAL_IF_FAIL(layer_data, TDM_ERROR_INVALID_PARAMETER);
 	RETURN_VAL_IF_FAIL(caps, TDM_ERROR_INVALID_PARAMETER);
 
-	android_data = layer_data->android_data;
+	android_data = layer_data->output->android_data;
 
 	return android_hwc_get_layer_capabilities(android_data->hwc_manager,
 			layer_data->layer_idx, caps);
@@ -48,7 +48,7 @@ android_layer_set_info(tdm_layer *layer, tdm_info_layer *info)
 
 	layer_data = layer;
 	output_data = layer_data->output;
-	hwc_manager = layer_data->android_data->hwc_manager;
+	hwc_manager = output_data->android_data->hwc_manager;
 
 	android_hwc_layer_set_info(hwc_manager, output_data->otput_idx, layer_data->layer_idx, info);
 
@@ -75,7 +75,7 @@ android_layer_set_buffer(tdm_layer *layer, tbm_surface_h surface)
 
 	layer_data = layer;
 	output_data = layer_data->output;
-	hwc_manager = layer_data->android_data->hwc_manager;
+	hwc_manager = output_data->android_data->hwc_manager;
 
 	/* now we support only 'bo_idx == 1' case */
 	bo = tbm_surface_internal_get_bo(surface, 0);

@@ -67,8 +67,6 @@ struct _tdm_android_layer_data
 {
     struct list_head link;
 
-    tdm_android_data *android_data;
-
     /* output this layer is associated with */
     tdm_android_output_data *output;
 

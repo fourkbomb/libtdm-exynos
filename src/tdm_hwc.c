@@ -612,7 +612,7 @@ android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, t
 
 		TDM_WRN("Seem it's an incorrect use-case of TDM !!!");
 
-		/* only for an attempt to apply several commit requests before first vblank events occurs */
+		/* only for an attempt to apply several commit requests before first vblank event occurs */
 		if (hwc_manager->retire_fence_fd == -1) {
 			pthread_mutex_unlock(&hwc_manager->hwc_mutex);
 			usleep(17000); /* at this moment we haven't any fences we can wait on, so... */

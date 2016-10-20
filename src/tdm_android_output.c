@@ -48,7 +48,6 @@ _tdm_android_output_create_layer_list(tdm_android_output_data *output_data)
 		}
 		layer_data->layer_idx = i;
 		layer_data->output = output_data;
-		layer_data->android_data = android_data;
 
 		LIST_ADDTAIL(&layer_data->link, &output_data->layer_list);
 	}
