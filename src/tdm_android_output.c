@@ -46,7 +46,13 @@ _tdm_android_output_create_layer_list(tdm_android_output_data *output_data)
 			ret = TDM_ERROR_OUT_OF_MEMORY;
 			goto failed_create;
 		}
-		layer_data->layer_idx = i;
+		if (i == (num_layers - 1))
+			/* because the layer with index (num_layers - 1) is the fake layer,
+			 * and the layer with index num_layers is the
+			 * primary(HWC_FRAMEBUFFER_TARGET) layer */
+			layer_data->layer_idx = i + 1;
+		else
+			layer_data->layer_idx = i;
 		layer_data->output = output_data;
 
 		LIST_ADDTAIL(&layer_data->link, &output_data->layer_list);

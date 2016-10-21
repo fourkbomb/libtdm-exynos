@@ -7,10 +7,11 @@
 #include <hardware/hwcomposer.h>
 #include <hardware/fb.h>	/* Note: some devices may insist that the FB HAL be opened before HWC */
 #include <sync/sync.h>
+#include <stdbool.h>
 
 #include "tdm_hwc.h"
 
-#define MAX_HW_LAYERS (1)
+#define MAX_HW_LAYERS (3)
 #define INCHES_TO_MM (25.4)
 #define MAX_NUM_CONFIGS (32)
 #define MAX_NUM_OUTPUTS (1)
@@ -92,7 +93,7 @@ _clean_leayers_list(hwc_manager_t hwc_manager)
 static int
 _prepare_displays_content(hwc_manager_t hwc_manager)
 {
-	hwc_display_contents_1_t *list = NULL;
+	hwc_display_contents_1_t *primary_disp_contents = NULL;
 	hwc_layer_1_t *layer = NULL;
 	hwc_rect_t rect   = { 0, 0, 0, 0 };
 	hwc_frect_t frect = { 0.0, 0.0, 0.0, 0.0 };
@@ -100,25 +101,25 @@ _prepare_displays_content(hwc_manager_t hwc_manager)
 	size_t size;
 	int i;
 
-	size = sizeof(hwc_display_contents_1_t) + MAX_HW_LAYERS * sizeof(hwc_layer_1_t);
-	list = (hwc_display_contents_1_t *) calloc( 1, size );
-	if (!list)
+	size = sizeof(hwc_display_contents_1_t) + hwc_manager->max_num_layers * sizeof(hwc_layer_1_t);
+	primary_disp_contents = (hwc_display_contents_1_t *) calloc( 1, size );
+	if (!primary_disp_contents)
 		return -1;
 
 	hwc_manager->disps_list = (hwc_display_contents_1_t **) calloc(HWC_NUM_DISPLAY_TYPES, sizeof(hwc_display_contents_1_t *));
 	if (!hwc_manager->disps_list) {
-		free( list );
+		free(primary_disp_contents);
 		return -1;
 	}
 
-	/* we will set same set of layers/buffers for all displays */
-	for (i = 0; i < HWC_NUM_DISPLAY_TYPES; i++)
-		hwc_manager->disps_list[i] = list;
+	/* currently supported primary display only */
+	hwc_manager->disps_list[HWC_DISPLAY_PRIMARY] = primary_disp_contents;
 
 	/* prepare framebuffer layer */
 
 	/* framebuffer is the bottom layer */
-	hwc_manager->fb_target_layer = &list->hwLayers[MAX_HW_LAYERS - 1];
+	hwc_manager->fb_target_layer =
+			&primary_disp_contents->hwLayers[hwc_manager->max_num_layers - 1];
 
 	hwc_manager->fb_target_layer->compositionType = HWC_FRAMEBUFFER_TARGET;
 	hwc_manager->fb_target_layer->hints = 0;
@@ -136,19 +137,20 @@ _prepare_displays_content(hwc_manager_t hwc_manager)
 
 	/* prepare overlay layers */
 
-	for (i = 0; i < MAX_HW_LAYERS - 1;  i++) {
-		layer = &list->hwLayers[i];
+	for (i = 0; i < hwc_manager->max_num_layers - 1;  i++) {
+		layer = &primary_disp_contents->hwLayers[i];
 
-		layer->blending = HWC_BLENDING_NONE;
+		layer->blending = HWC_BLENDING_PREMULT;
 		layer->visibleRegionScreen.numRects = 1;
 		layer->visibleRegionScreen.rects = &layer->displayFrame;
 		layer->acquireFenceFd = -1;
 		layer->releaseFenceFd = -1;
+		layer->planeAlpha = 0xff;
 	}
 
-	list->retireFenceFd = -1;
-	list->flags = HWC_GEOMETRY_CHANGED;
-	list->numHwLayers = MAX_HW_LAYERS;
+	primary_disp_contents->retireFenceFd = -1;
+	primary_disp_contents->flags = HWC_GEOMETRY_CHANGED;
+	primary_disp_contents->numHwLayers = hwc_manager->max_num_layers;
 
 	return 0;
 }
@@ -330,6 +332,9 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 		return TDM_ERROR_OPERATION_FAILED;
 	}
 
+	hwc_manager->max_num_outputs = MAX_NUM_OUTPUTS;
+	hwc_manager->max_num_layers = MAX_HW_LAYERS;
+
 	ret = _prepare_hwc_device(hwc_manager);
 	if (ret)
 		return TDM_ERROR_OPERATION_FAILED;
@@ -350,9 +355,6 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 		free(hwc_manager);
 		return TDM_ERROR_OPERATION_FAILED;
 	}
-
-	hwc_manager->max_num_outputs = MAX_NUM_OUTPUTS;
-	hwc_manager->max_num_layers = MAX_HW_LAYERS;
 
 	*hwc_manager_ = hwc_manager;
 
@@ -401,7 +403,10 @@ android_hwc_vsync_event_control(hwc_manager_t hwc_manager, int output_idx, int s
 int
 android_hwc_get_max_hw_layers(hwc_manager_t hwc_manager)
 {
-	return hwc_manager->max_num_layers;
+	/* In order to HWC_FRAMEBUFFER_TARGET layer was not ignored by the hwc,
+	 * the layer list must contain at least one HWC_FRAMEBUFFER layer. So we
+	 * create one fake layer which will not be used.*/
+	return hwc_manager->max_num_layers - 1;
 }
 
 int
@@ -537,8 +542,13 @@ android_hwc_get_layer_capabilities(hwc_manager_t hwc_manager, int layer_idx, tdm
 	/* TODO: it's temporary code until we'll have figured out how to work
 	 *       with several outputs and layers*/
 
-	caps->capabilities = TDM_LAYER_CAPABILITY_PRIMARY | TDM_LAYER_CAPABILITY_GRAPHIC;
-	caps->zpos = 0;
+	if (layer_idx == (hwc_manager->max_num_layers - 1)) {
+		caps->capabilities = TDM_LAYER_CAPABILITY_PRIMARY | TDM_LAYER_CAPABILITY_GRAPHIC;
+		caps->zpos = layer_idx - 1;
+	} else {
+		caps->capabilities = TDM_LAYER_CAPABILITY_OVERLAY | TDM_LAYER_CAPABILITY_GRAPHIC;
+		caps->zpos = layer_idx;
+	}
 
 	/*
 	 * TODO: find a way to know available formats, perhaps via tbm
@@ -597,8 +607,10 @@ android_hwc_output_set_commit_handler(hwc_manager_t hwc_manager, int output_idx,
 tdm_error
 android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, tdm_output *output, void *user_data)
 {
-	int ret;
+	int ret, i, num_hw_layers;
 	int fence;
+	hwc_layer_1_t *layer;
+	bool all_overlay = true;
 
 	/* TODO: some work for synchronize issues (hwc access to buffer) must be done */
 	/* TODO: some work to make ability to use tdm_commit in sync modes (now only async mode is supplied) */
@@ -647,6 +659,33 @@ android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, t
 
 	hwc_manager->output = output;
 	hwc_manager->user_data = user_data;
+
+	hwc_manager->disps_list[output_idx]->flags = HWC_GEOMETRY_CHANGED;
+
+	ret = hwc_manager->hwc_dev->prepare(hwc_manager->hwc_dev,
+										hwc_manager->max_num_outputs,
+										hwc_manager->disps_list);
+	if (ret) {
+		/* TODO: what about fences ?. */
+		pthread_mutex_unlock(&hwc_manager->hwc_mutex);
+		return TDM_ERROR_OPERATION_FAILED;
+	}
+
+	num_hw_layers = hwc_manager->disps_list[output_idx]->numHwLayers;
+	for (i = 0; i < (num_hw_layers - 2); ++i) {
+		layer = &hwc_manager->disps_list[output_idx]->hwLayers[i];
+		if (layer->compositionType != HWC_OVERLAY) {
+			if (layer->handle)
+				TDM_WRN("overlay layer %d cannot be displayed(maybe it overlaps"
+						"with other layers)", i);
+			all_overlay = false;
+		}
+	}
+
+	/* get access to the fake layer */
+	layer = &hwc_manager->disps_list[output_idx]->hwLayers[num_hw_layers - 2];
+	if (layer->compositionType != HWC_FRAMEBUFFER && all_overlay)
+		TDM_WRN("primary layer will be ignored by the hwc");
 
 	ret = hwc_manager->hwc_dev->set(hwc_manager->hwc_dev,
 									hwc_manager->max_num_outputs,
