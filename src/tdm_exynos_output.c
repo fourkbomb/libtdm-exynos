@@ -124,13 +124,23 @@ _tdm_exynos_output_get_mode(tdm_exynos_output_data *output_data)
 
 	for (i = 0; i < output_data->count_modes; i++) {
 		drmModeModeInfoPtr drm_mode = &output_data->drm_modes[i];
-		if ((drm_mode->hdisplay == output_data->current_mode->hdisplay) &&
-		    (drm_mode->vdisplay == output_data->current_mode->vdisplay) &&
-		    (drm_mode->vrefresh == output_data->current_mode->vrefresh) &&
-		    (drm_mode->flags == output_data->current_mode->flags) &&
-		    (drm_mode->type == output_data->current_mode->type) &&
-		    !(strncmp(drm_mode->name, output_data->current_mode->name, TDM_NAME_LEN)))
-			return drm_mode;
+		if (exynos_screen_prerotation_hint % 180) {
+			if ((drm_mode->hdisplay == output_data->current_mode->vdisplay) &&
+			    (drm_mode->vdisplay == output_data->current_mode->hdisplay) &&
+			    (drm_mode->vrefresh == output_data->current_mode->vrefresh) &&
+			    (drm_mode->flags == output_data->current_mode->flags) &&
+			    (drm_mode->type == output_data->current_mode->type) &&
+			    !(strncmp(drm_mode->name, output_data->current_mode->name, TDM_NAME_LEN)))
+				return drm_mode;
+		} else {
+			if ((drm_mode->hdisplay == output_data->current_mode->hdisplay) &&
+			    (drm_mode->vdisplay == output_data->current_mode->vdisplay) &&
+			    (drm_mode->vrefresh == output_data->current_mode->vrefresh) &&
+			    (drm_mode->flags == output_data->current_mode->flags) &&
+			    (drm_mode->type == output_data->current_mode->type) &&
+			    !(strncmp(drm_mode->name, output_data->current_mode->name, TDM_NAME_LEN)))
+				return drm_mode;
+		}
 	}
 
 	return NULL;
@@ -180,6 +190,37 @@ _tdm_exynos_output_wait_vblank(int fd, int pipe, uint *target_msc, void *data)
 	return TDM_ERROR_NONE;
 }
 
+static void
+_tdm_exynos_output_transform_layer_info(int width, int height, tdm_info_layer *info)
+{
+	tdm_pos dst_pos;
+
+	switch (exynos_screen_prerotation_hint) {
+	case 90:
+		dst_pos.x = info->dst_pos.y;
+		dst_pos.y = width - info->dst_pos.x - info->dst_pos.w;
+		dst_pos.w = info->dst_pos.h;
+		dst_pos.h = info->dst_pos.w;
+		break;
+	case 180:
+		dst_pos.x = width - info->dst_pos.x - info->dst_pos.w;
+		dst_pos.y = height - info->dst_pos.y - info->dst_pos.h;
+		dst_pos.w = info->dst_pos.w;
+		dst_pos.h = info->dst_pos.h;
+		break;
+	case 270:
+		dst_pos.x = height - info->dst_pos.y - info->dst_pos.h;
+		dst_pos.y = info->dst_pos.x;
+		dst_pos.w = info->dst_pos.h;
+		dst_pos.h = info->dst_pos.w;
+		break;
+	default:
+		return;
+	}
+
+	info->dst_pos = dst_pos;
+}
+
 static tdm_error
 _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 												  void *user_data, int *do_waitvblank)
@@ -191,6 +232,7 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 	int crtc_w;
 
 	if (output_data->mode_changed && layer_data->display_buffer_changed) {
+		tdm_info_layer layer_info = layer_data->info;
 		drmModeModeInfoPtr mode;
 
 		if (!layer_data->display_buffer) {
@@ -198,9 +240,12 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 			return TDM_ERROR_BAD_REQUEST;
 		}
 
-		if (output_data->current_mode)
-			crtc_w = output_data->current_mode->hdisplay;
-		else {
+		if (output_data->current_mode) {
+			if (exynos_screen_prerotation_hint % 180)
+				crtc_w = output_data->current_mode->vdisplay;
+			else
+				crtc_w = output_data->current_mode->hdisplay;
+		} else {
 			drmModeCrtcPtr crtc = drmModeGetCrtc(exynos_data->drm_fd, output_data->crtc_id);
 			if (!crtc) {
 				TDM_ERR("getting crtc failed");
@@ -223,19 +268,23 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 			return TDM_ERROR_BAD_REQUEST;
 		}
 
+		_tdm_exynos_output_transform_layer_info(output_data->current_mode->hdisplay,
+												output_data->current_mode->vdisplay,
+												&layer_info);
+
 		if (check_hw_restriction_crtc(crtc_w,
-									  layer_data->info.src_config.size.h, layer_data->info.src_config.size.v,
-									  layer_data->info.src_config.pos.x, layer_data->info.src_config.pos.y,
-									  layer_data->info.src_config.pos.w, layer_data->info.src_config.pos.h,
-									  layer_data->info.dst_pos.w, layer_data->info.dst_pos.h,
+									  layer_info.src_config.size.h, layer_info.src_config.size.v,
+									  layer_info.src_config.pos.x, layer_info.src_config.pos.y,
+									  layer_info.src_config.pos.w, layer_info.src_config.pos.h,
+									  layer_info.dst_pos.w, layer_info.dst_pos.h,
 									  &new_x, &new_y) != TDM_ERROR_NONE)
 		TDM_WRN("not going to set crtc(%d)", output_data->crtc_id);
 
-		if (layer_data->info.src_config.pos.x != new_x)
-			TDM_DBG("src_x changed: %d => %d", layer_data->info.src_config.pos.x,
+		if (layer_info.src_config.pos.x != new_x)
+			TDM_DBG("src_x changed: %d => %d", layer_info.src_config.pos.x,
 					new_x);
-		if (layer_data->info.src_config.pos.y != new_y)
-			TDM_DBG("src_y changed: %d => %d", layer_data->info.src_config.pos.y,
+		if (layer_info.src_config.pos.y != new_y)
+			TDM_DBG("src_y changed: %d => %d", layer_info.src_config.pos.y,
 					new_y);
 
 		fx = (unsigned int)new_x;
@@ -315,13 +364,17 @@ _tdm_exynos_output_commit_layer(tdm_exynos_layer_data *layer_data)
 	unsigned int new_dst_x, new_dst_w;
 	uint32_t fx, fy, fw, fh;
 	int crtc_w;
+	tdm_info_layer layer_info = layer_data->info;
 
 	if (!layer_data->display_buffer_changed && !layer_data->info_changed)
 		return TDM_ERROR_NONE;
 
-	if (output_data->current_mode)
-		crtc_w = output_data->current_mode->hdisplay;
-	else {
+	if (output_data->current_mode) {
+		if (exynos_screen_prerotation_hint % 180)
+			crtc_w = output_data->current_mode->vdisplay;
+		else
+			crtc_w = output_data->current_mode->hdisplay;
+	} else {
 		drmModeCrtcPtr crtc = drmModeGetCrtc(exynos_data->drm_fd, output_data->crtc_id);
 		if (!crtc) {
 			TDM_ERR("getting crtc failed");
@@ -348,44 +401,48 @@ _tdm_exynos_output_commit_layer(tdm_exynos_layer_data *layer_data)
 		return TDM_ERROR_NONE;
 	}
 
+	_tdm_exynos_output_transform_layer_info(output_data->current_mode->hdisplay,
+											output_data->current_mode->vdisplay,
+											&layer_info);
+
 	/* check hw restriction*/
 	if (check_hw_restriction(crtc_w, layer_data->display_buffer->width,
-							 layer_data->info.src_config.pos.x,
-							 layer_data->info.src_config.pos.w,
-							 layer_data->info.dst_pos.x,
-							 layer_data->info.dst_pos.w,
+							 layer_info.src_config.pos.x,
+							 layer_info.src_config.pos.w,
+							 layer_info.dst_pos.x,
+							 layer_info.dst_pos.w,
 							 &new_src_x, &new_src_w, &new_dst_x, &new_dst_w) != TDM_ERROR_NONE) {
 		TDM_WRN("not going to set plane(%d)", layer_data->plane_id);
 		return TDM_ERROR_NONE;
 	}
 
-	if (layer_data->info.src_config.pos.x != new_src_x)
-		TDM_DBG("src_x changed: %d => %d", layer_data->info.src_config.pos.x, new_src_x);
-	if (layer_data->info.src_config.pos.w != new_src_w)
-		TDM_DBG("src_w changed: %d => %d", layer_data->info.src_config.pos.w, new_src_w);
-	if (layer_data->info.dst_pos.x != new_dst_x)
-		TDM_DBG("dst_x changed: %d => %d", layer_data->info.dst_pos.x, new_dst_x);
-	if (layer_data->info.dst_pos.w != new_dst_w)
-		TDM_DBG("dst_w changed: %d => %d", layer_data->info.dst_pos.w, new_dst_w);
+	if (layer_info.src_config.pos.x != new_src_x)
+		TDM_DBG("src_x changed: %d => %d", layer_info.src_config.pos.x, new_src_x);
+	if (layer_info.src_config.pos.w != new_src_w)
+		TDM_DBG("src_w changed: %d => %d", layer_info.src_config.pos.w, new_src_w);
+	if (layer_info.dst_pos.x != new_dst_x)
+		TDM_DBG("dst_x changed: %d => %d", layer_info.dst_pos.x, new_dst_x);
+	if (layer_info.dst_pos.w != new_dst_w)
+		TDM_DBG("dst_w changed: %d => %d", layer_info.dst_pos.w, new_dst_w);
 
 	/* Source values are 16.16 fixed point */
 	fx = ((unsigned int)new_src_x) << 16;
-	fy = ((unsigned int)layer_data->info.src_config.pos.y) << 16;
+	fy = ((unsigned int)layer_info.src_config.pos.y) << 16;
 	fw = ((unsigned int)new_src_w) << 16;
-	fh = ((unsigned int)layer_data->info.src_config.pos.h) << 16;
+	fh = ((unsigned int)layer_info.src_config.pos.h) << 16;
 
 	TDM_DBG("SetPlane: drm_fd(%d) plane_id(%d) crtc_id(%d) fb_id(%d) src(%d,%d %dx%d) dst(%d,%d %dx%d)",
 			exynos_data->drm_fd, layer_data->plane_id,
 			output_data->crtc_id, layer_data->display_buffer->fb_id,
-			new_src_x, layer_data->info.src_config.pos.y,
-			new_src_w, layer_data->info.src_config.pos.h,
-			layer_data->info.dst_pos.x, layer_data->info.dst_pos.y,
-			layer_data->info.dst_pos.w, layer_data->info.dst_pos.h);
+			new_src_x, layer_info.src_config.pos.y,
+			new_src_w, layer_info.src_config.pos.h,
+			layer_info.dst_pos.x, layer_info.dst_pos.y,
+			layer_info.dst_pos.w, layer_info.dst_pos.h);
 
 	if (drmModeSetPlane(exynos_data->drm_fd, layer_data->plane_id,
 						output_data->crtc_id, layer_data->display_buffer->fb_id, 0,
-						new_dst_x, layer_data->info.dst_pos.y,
-						new_dst_w, layer_data->info.dst_pos.h,
+						new_dst_x, layer_info.dst_pos.y,
+						new_dst_w, layer_info.dst_pos.h,
 						fx, fy, fw, fh) < 0) {
 		TDM_ERR("set plane(%d) failed: %m", layer_data->plane_id);
 		return TDM_ERROR_OPERATION_FAILED;
@@ -524,14 +581,23 @@ exynos_output_get_capability(tdm_output *output, tdm_caps_output *caps)
 		output_data->status = TDM_OUTPUT_CONN_STATUS_DISCONNECTED;
 	caps->status = output_data->status;
 
-	caps->mmWidth = connector->mmWidth;
-	caps->mmHeight = connector->mmHeight;
-	caps->subpixel = connector->subpixel;
+	if (exynos_screen_prerotation_hint % 180) {
+		caps->mmWidth = connector->mmHeight;
+		caps->mmHeight = connector->mmWidth;
+		caps->min_w = exynos_data->mode_res->min_height;
+		caps->min_h = exynos_data->mode_res->min_width;
+		caps->max_w = exynos_data->mode_res->max_height;
+		caps->max_h = exynos_data->mode_res->max_width;
+	} else {
+		caps->mmWidth = connector->mmWidth;
+		caps->mmHeight = connector->mmHeight;
+		caps->min_w = exynos_data->mode_res->min_width;
+		caps->min_h = exynos_data->mode_res->min_height;
+		caps->max_w = exynos_data->mode_res->max_width;
+		caps->max_h = exynos_data->mode_res->max_height;
+	}
 
-	caps->min_w = exynos_data->mode_res->min_width;
-	caps->min_h = exynos_data->mode_res->min_height;
-	caps->max_w = exynos_data->mode_res->max_width;
-	caps->max_h = exynos_data->mode_res->max_height;
+	caps->subpixel = connector->subpixel;
 	caps->preferred_align = -1;
 
 	crtc = drmModeGetCrtc(exynos_data->drm_fd, output_data->crtc_id);
