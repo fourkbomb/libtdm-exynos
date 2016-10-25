@@ -12,6 +12,7 @@
 #define EXYNOS_DRM_NAME "exynos"
 
 static tdm_exynos_data *exynos_data;
+unsigned int exynos_screen_prerotation_hint;
 
 #ifdef HAVE_UDEV
 static tdm_error
@@ -237,6 +238,14 @@ tdm_exynos_init(tdm_display *dpy, tdm_error *error)
 	tdm_func_layer exynos_func_layer;
 	tdm_func_pp exynos_func_pp;
 	tdm_error ret;
+	const char *value;
+
+	value = (const char*)getenv("SCREEN_PREROTATION_HINT");
+	if (value) {
+		char *end;
+		exynos_screen_prerotation_hint = strtol(value, &end, 10);
+		TDM_INFO("SCREEN_PREROTATION_HINT = %d", exynos_screen_prerotation_hint);
+	}
 
 	if (!dpy) {
 		TDM_ERR("display is null");

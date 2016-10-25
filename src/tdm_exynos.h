@@ -29,6 +29,8 @@
 #include "tdm_exynos_layer.h"
 #include "tdm_exynos_pp.h"
 
+extern unsigned int exynos_screen_prerotation_hint;
+
 /* exynos backend functions */
 tdm_error    exynos_display_get_capability(tdm_backend_data *bdata, tdm_caps_display *caps);
 tdm_error    exynos_display_get_pp_capability(tdm_backend_data *bdata, tdm_caps_pp *caps);
