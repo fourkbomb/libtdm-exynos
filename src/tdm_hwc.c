@@ -81,6 +81,10 @@ struct _hwc_manager
 	/* sync fence object for composition which is currently active or
 	 * recently(if we're in vblank handler) has been retired (finished) */
 	int retire_fence_fd;
+#ifdef QCOM_BSP
+	int width;
+	int height;
+#endif
 };
 
 static void
@@ -97,9 +101,15 @@ _prepare_displays_content(hwc_manager_t hwc_manager)
 	hwc_layer_1_t *layer = NULL;
 	hwc_rect_t rect   = { 0, 0, 0, 0 };
 	hwc_frect_t frect = { 0.0, 0.0, 0.0, 0.0 };
-
 	size_t size;
 	int i;
+
+#ifdef QCOM_BSP
+	rect.right = hwc_manager->width;
+	rect.bottom = hwc_manager->height;
+	frect.right = (float)hwc_manager->width;
+	frect.bottom = (float)hwc_manager->height;
+#endif
 
 	size = sizeof(hwc_display_contents_1_t) + hwc_manager->max_num_layers * sizeof(hwc_layer_1_t);
 	primary_disp_contents = (hwc_display_contents_1_t *) calloc( 1, size );
@@ -146,6 +156,10 @@ _prepare_displays_content(hwc_manager_t hwc_manager)
 		layer->acquireFenceFd = -1;
 		layer->releaseFenceFd = -1;
 		layer->planeAlpha = 0xff;
+#ifdef QCOM_BSP
+		layer->sourceCropf = frect;
+		layer->displayFrame = rect;
+#endif
 	}
 
 	primary_disp_contents->retireFenceFd = -1;
@@ -256,6 +270,22 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 {
 	int value;
 	int res;
+#ifdef QCOM_BSP
+	uint32_t configs[MAX_NUM_CONFIGS];
+	size_t num_configs = MAX_NUM_CONFIGS;
+	const uint32_t disp_attrs[] =
+	{
+		HWC_DISPLAY_WIDTH,
+		HWC_DISPLAY_HEIGHT,
+		HWC_DISPLAY_VSYNC_PERIOD,
+		HWC_DISPLAY_DPI_X,
+		HWC_DISPLAY_DPI_Y,
+		HWC_DISPLAY_SECURE,
+		HWC_DISPLAY_NO_ATTRIBUTE,
+	};
+	const int vsize = sizeof(disp_attrs) / sizeof(uint32_t);
+	int32_t values[vsize];
+#endif
 
 	/* some devices may insist that the FB HAL be opened before HWC */
 	_prepare_fb_device(hwc_manager);
@@ -276,11 +306,19 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 	 * of course if it exists on the platform. */
 	_unprepare_fb_device(hwc_manager);
 
+#ifndef QCOM_BSP
 	TDM_DBG("turn on a screen...");
-	res = hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, HWC_DISPLAY_PRIMARY, 0);
+	if ((hwc_manager->hwc_dev->common.version & 0xFFFF0000) >= 0x1040000) {
+		res = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
+												 HWC_DISPLAY_PRIMARY,
+												 HWC_POWER_MODE_NORMAL);
+	} else {
+		res = hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, HWC_DISPLAY_PRIMARY, 0);
+	}
 	if (res) {
 		TDM_DBG("warning: cannot turn on a screen, obviously it has been turned on already.");
 	}
+#endif
 
 	TDM_INFO("hwc version: %x.", hwc_manager->hwc_dev->common.version & 0xFFFF0000);
 	TDM_INFO("hwc module api version: %hu.", hwc_manager->hwc_dev->common.module->module_api_version);
@@ -301,6 +339,26 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 	}
 
 	TDM_INFO("Hw composer does%s support HWC_BACKGROUND_LAYER feature.", value ? "":"n't");
+
+#ifdef QCOM_BSP
+	/* get available display configurations */
+	res = hwc_manager->hwc_dev->getDisplayConfigs(hwc_manager->hwc_dev,
+												  HWC_DISPLAY_PRIMARY,
+												  configs, &num_configs);
+	if (res || num_configs < 1) {
+		TDM_ERR("Error: cannot get hwc's configs.");
+		goto fail_2;
+	}
+	res = hwc_manager->hwc_dev->getDisplayAttributes(hwc_manager->hwc_dev,
+													 HWC_DISPLAY_PRIMARY, configs[0],
+													 disp_attrs, values);
+	if (res) {
+		TDM_ERR("Error: cannot get display attributes.");
+		goto fail_2;
+	}
+	hwc_manager->width = values[0];
+	hwc_manager->height = values[1];
+#endif
 
 	return 0;
 
@@ -358,10 +416,19 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 
 	*hwc_manager_ = hwc_manager;
 
+#ifndef QCOM_BSP
 	/* tdm requires set_dpms with TDM_OUTPUT_DPMS_ON arg to be called before commit call,
 	 * so we can turn off screen here, it will be turned on request from set_dpms function */
 	TDM_INFO("turn off a screen...");
-	hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, HWC_DISPLAY_PRIMARY, 1);
+	uint32_t hwc_version = hwc_manager->hwc_dev->common.version & 0xFFFF0000;
+	if (hwc_version >= 0x1040000) {
+		hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
+										   HWC_DISPLAY_PRIMARY,
+										   HWC_POWER_MODE_OFF);
+	} else {
+		hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, HWC_DISPLAY_PRIMARY, 1);
+	}
+#endif
 
 	return TDM_ERROR_NONE;
 }
@@ -446,6 +513,7 @@ android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx,
 		HWC_DISPLAY_VSYNC_PERIOD,
 		HWC_DISPLAY_DPI_X,
 		HWC_DISPLAY_DPI_Y,
+		HWC_DISPLAY_SECURE,
 		HWC_DISPLAY_NO_ATTRIBUTE,
 	};
 	const int vsize = sizeof(disp_attrs) / sizeof(uint32_t);
