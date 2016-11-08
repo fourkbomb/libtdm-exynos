@@ -92,5 +92,18 @@ android_layer_set_buffer(tdm_layer *layer, tbm_surface_h surface)
 tdm_error
 android_layer_unset_buffer(tdm_layer *layer)
 {
+	tdm_android_output_data *output_data;
+	tdm_android_layer_data *layer_data;
+	hwc_manager_t hwc_manager;
+
+	RETURN_VAL_IF_FAIL(layer, TDM_ERROR_INVALID_PARAMETER);
+
+	layer_data = layer;
+	output_data = layer_data->output;
+	hwc_manager = output_data->android_data->hwc_manager;
+
+	android_hwc_layer_unset_buff(hwc_manager, output_data->otput_idx,
+								 layer_data->layer_idx);
+
 	return TDM_ERROR_NONE;
 }

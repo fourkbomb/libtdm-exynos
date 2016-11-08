@@ -663,6 +663,16 @@ android_hwc_layer_set_buff(hwc_manager_t hwc_manager, int output_idx, int layer_
 }
 
 void
+android_hwc_layer_unset_buff(hwc_manager_t hwc_manager, int output_idx, int layer_idx)
+{
+	hwc_layer_1_t *curr_layer;
+
+	curr_layer = &hwc_manager->disps_list[output_idx]->hwLayers[layer_idx];
+
+	curr_layer->handle = NULL;
+}
+
+void
 android_hwc_output_set_commit_handler(hwc_manager_t hwc_manager, int output_idx, tdm_output_commit_handler hndl)
 {
 	pthread_mutex_lock(&hwc_manager->hwc_mutex);
