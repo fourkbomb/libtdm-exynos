@@ -50,6 +50,8 @@ android_layer_set_info(tdm_layer *layer, tdm_info_layer *info)
 	output_data = layer_data->output;
 	hwc_manager = output_data->android_data->hwc_manager;
 
+	layer_data->info = *info;
+
 	android_hwc_layer_set_info(hwc_manager, output_data->otput_idx, layer_data->layer_idx, info);
 
 	return TDM_ERROR_NONE;
@@ -58,6 +60,15 @@ android_layer_set_info(tdm_layer *layer, tdm_info_layer *info)
 tdm_error
 android_layer_get_info(tdm_layer *layer, tdm_info_layer *info)
 {
+	tdm_android_layer_data *layer_data;
+
+	RETURN_VAL_IF_FAIL(layer, TDM_ERROR_INVALID_PARAMETER);
+	RETURN_VAL_IF_FAIL(info, TDM_ERROR_INVALID_PARAMETER);
+
+	layer_data = layer;
+
+	*info = layer_data->info;
+
 	return TDM_ERROR_NONE;
 }
 

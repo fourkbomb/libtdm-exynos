@@ -77,6 +77,8 @@ struct _tdm_android_layer_data
      *       this backend maps layer with HWC_FRAMEBUFFER_TARGET capability
      *       and it has layer_idx == max_hw_layers - 1 */
     int layer_idx;
+
+    tdm_info_layer info;
 };
 
 struct _tdm_android_display_buffer
