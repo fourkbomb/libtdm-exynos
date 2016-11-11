@@ -229,7 +229,7 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 	tdm_exynos_output_data *output_data = layer_data->output_data;
 	unsigned int new_x = -1, new_y = -1;
 	uint32_t fx, fy;
-	int crtc_w;
+	int crtc_w, crtc_h;
 
 	if (output_data->mode_changed && layer_data->display_buffer_changed) {
 		tdm_info_layer layer_info = layer_data->info;
@@ -241,10 +241,8 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 		}
 
 		if (output_data->current_mode) {
-			if (exynos_screen_prerotation_hint % 180)
-				crtc_w = output_data->current_mode->vdisplay;
-			else
-				crtc_w = output_data->current_mode->hdisplay;
+			crtc_w = output_data->current_mode->hdisplay;
+			crtc_h = output_data->current_mode->vdisplay;
 		} else {
 			drmModeCrtcPtr crtc = drmModeGetCrtc(exynos_data->drm_fd, output_data->crtc_id);
 			if (!crtc) {
@@ -252,6 +250,7 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 				return TDM_ERROR_OPERATION_FAILED;
 			}
 			crtc_w = crtc->width;
+			crtc_h = crtc->height;
 			if (crtc_w == 0) {
 				TDM_ERR("getting crtc width failed");
 				return TDM_ERROR_OPERATION_FAILED;
@@ -268,9 +267,7 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 			return TDM_ERROR_BAD_REQUEST;
 		}
 
-		_tdm_exynos_output_transform_layer_info(output_data->current_mode->hdisplay,
-												output_data->current_mode->vdisplay,
-												&layer_info);
+		_tdm_exynos_output_transform_layer_info(crtc_w, crtc_h, &layer_info);
 
 		if (check_hw_restriction_crtc(crtc_w,
 									  layer_info.src_config.size.h, layer_info.src_config.size.v,
@@ -363,17 +360,15 @@ _tdm_exynos_output_commit_layer(tdm_exynos_layer_data *layer_data)
 	unsigned int new_src_x, new_src_w;
 	unsigned int new_dst_x, new_dst_w;
 	uint32_t fx, fy, fw, fh;
-	int crtc_w;
+	int crtc_w, crtc_h;
 	tdm_info_layer layer_info = layer_data->info;
 
 	if (!layer_data->display_buffer_changed && !layer_data->info_changed)
 		return TDM_ERROR_NONE;
 
 	if (output_data->current_mode) {
-		if (exynos_screen_prerotation_hint % 180)
-			crtc_w = output_data->current_mode->vdisplay;
-		else
-			crtc_w = output_data->current_mode->hdisplay;
+		crtc_w = output_data->current_mode->hdisplay;
+		crtc_h = output_data->current_mode->vdisplay;
 	} else {
 		drmModeCrtcPtr crtc = drmModeGetCrtc(exynos_data->drm_fd, output_data->crtc_id);
 		if (!crtc) {
@@ -381,6 +376,7 @@ _tdm_exynos_output_commit_layer(tdm_exynos_layer_data *layer_data)
 			return TDM_ERROR_OPERATION_FAILED;
 		}
 		crtc_w = crtc->width;
+		crtc_h = crtc->height;
 		if (crtc_w == 0) {
 			TDM_ERR("getting crtc width failed");
 			return TDM_ERROR_OPERATION_FAILED;
@@ -401,9 +397,7 @@ _tdm_exynos_output_commit_layer(tdm_exynos_layer_data *layer_data)
 		return TDM_ERROR_NONE;
 	}
 
-	_tdm_exynos_output_transform_layer_info(output_data->current_mode->hdisplay,
-											output_data->current_mode->vdisplay,
-											&layer_info);
+		_tdm_exynos_output_transform_layer_info(crtc_w, crtc_h, &layer_info);
 
 	/* check hw restriction*/
 	if (check_hw_restriction(crtc_w, layer_data->display_buffer->width,
