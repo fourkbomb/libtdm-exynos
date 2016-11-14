@@ -5,6 +5,7 @@
 
 #include "tdm_android_types.h"
 
+#include "tdm_android.h"
 
 tdm_error android_hwc_init(hwc_manager_t *hwc_manager_);
 void android_hwc_deinit(hwc_manager_t hwc_manager);

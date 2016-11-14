@@ -145,6 +145,42 @@ _prepare_displays_content(hwc_manager_t hwc_manager)
 	hwc_manager->fb_target_layer->releaseFenceFd = -1;
 	hwc_manager->fb_target_layer->planeAlpha = 0xff;
 
+	TDM_DBG("fb_target_layer:\n"
+			"	compositionType:%s\n"
+			"	hints:%d\n"
+			"	flags:%d\n"
+			"	handle:%p\n"
+			"	transform:%d\n"
+			"	blending:%X\n"
+			"	sourceCropf.left:%f\n"
+			"	sourceCropf.top:%f\n"
+			"	sourceCropf.right:%f\n"
+			"	sourceCropf.bottom:%f\n"
+			"	displayFrame.left:%f\n"
+			"	displayFrame.top:%f\n"
+			"	displayFrame.right:%f\n"
+			"	displayFrame.bottom:%f\n"
+			"	acquireFenceFd:%d\n"
+			"	releaseFenceFd:%d\n"
+			"	planeAlpha:%d",
+			str_composit_type[hwc_manager->fb_target_layer->compositionType],
+			hwc_manager->fb_target_layer->hints,
+			hwc_manager->fb_target_layer->flags,
+			hwc_manager->fb_target_layer->handle,
+			hwc_manager->fb_target_layer->transform,
+			hwc_manager->fb_target_layer->blending,
+			hwc_manager->fb_target_layer->sourceCropf.left,
+			hwc_manager->fb_target_layer->sourceCropf.top,
+			hwc_manager->fb_target_layer->sourceCropf.right,
+			hwc_manager->fb_target_layer->sourceCropf.bottom,
+			hwc_manager->fb_target_layer->displayFrame.left,
+			hwc_manager->fb_target_layer->displayFrame.top,
+			hwc_manager->fb_target_layer->displayFrame.right,
+			hwc_manager->fb_target_layer->displayFrame.bottom,
+			hwc_manager->fb_target_layer->acquireFenceFd,
+			hwc_manager->fb_target_layer->releaseFenceFd,
+			hwc_manager->fb_target_layer->planeAlpha);
+
 	/* prepare overlay layers */
 
 	for (i = 0; i < hwc_manager->max_num_layers - 1;  i++) {
@@ -160,11 +196,50 @@ _prepare_displays_content(hwc_manager_t hwc_manager)
 		layer->sourceCropf = frect;
 		layer->displayFrame = rect;
 #endif
+		TDM_DBG("layer:%d\n"
+				"	compositionType:%s\n"
+				"	handle:%p\n"
+				"	transform:%d\n"
+				"	blending:%X\n"
+#ifdef QCOM_BSP
+				"	sourceCropf.left:%f\n"
+				"	sourceCropf.top:%f\n"
+				"	sourceCropf.right:%f\n"
+				"	sourceCropf.bottom:%f\n"
+				"	displayFrame.left:%f\n"
+				"	displayFrame.top:%f\n"
+				"	displayFrame.right:%f\n"
+				"	displayFrame.bottom:%f\n"
+#endif
+				"	acquireFenceFd:%d\n"
+				"	releaseFenceFd:%d\n"
+				"	planeAlpha:%d", i,
+				str_composit_type[hwc_manager->fb_target_layer->compositionType],
+				hwc_manager->fb_target_layer->handle,
+				hwc_manager->fb_target_layer->transform,
+				hwc_manager->fb_target_layer->blending,
+#ifdef QCOM_BSP
+				hwc_manager->fb_target_layer->sourceCropf.left,
+				hwc_manager->fb_target_layer->sourceCropf.top,
+				hwc_manager->fb_target_layer->sourceCropf.right,
+				hwc_manager->fb_target_layer->sourceCropf.bottom,
+				hwc_manager->fb_target_layer->displayFrame.left,
+				hwc_manager->fb_target_layer->displayFrame.top,
+				hwc_manager->fb_target_layer->displayFrame.right,
+				hwc_manager->fb_target_layer->displayFrame.bottom,
+#endif
+				hwc_manager->fb_target_layer->acquireFenceFd,
+				hwc_manager->fb_target_layer->releaseFenceFd,
+				hwc_manager->fb_target_layer->planeAlpha);
 	}
 
 	primary_disp_contents->retireFenceFd = -1;
 	primary_disp_contents->flags = HWC_GEOMETRY_CHANGED;
 	primary_disp_contents->numHwLayers = hwc_manager->max_num_layers;
+
+	TDM_DBG("primary_disp_contents:%p, flags:%d, max_num_layers:%d",
+			primary_disp_contents, primary_disp_contents->flags,
+			primary_disp_contents->numHwLayers);
 
 	return 0;
 }
@@ -186,6 +261,9 @@ _hwc_vsync_cb(const struct hwc_procs *procs, int disp, int64_t ts)
 	int64_t tv_sec, tv_usec;
 
 	hwc_manager = container_of(procs, hwc_manager, hwc_callbacks);
+
+	TDM_DBG("procs:%p, disp:%s, ts:%d, hwc_manager:%p", procs,
+			str_display_type[disp], ts, hwc_manager);
 
 	pthread_mutex_lock(&hwc_manager->hwc_mutex);
 
@@ -235,6 +313,8 @@ _hwc_hotplug_cb(const struct hwc_procs *procs, int disp, int conn)
 static void
 _unprepare_fb_device(hwc_manager_t hwc_manager)
 {
+	TDM_DBG("fb_dev:%p", hwc_manager->fb_dev);
+
 	if (hwc_manager->fb_dev) {
 		framebuffer_close(hwc_manager->fb_dev);
 		hwc_manager->fb_dev = NULL;
@@ -263,6 +343,8 @@ _prepare_fb_device(hwc_manager_t hwc_manager)
 		TDM_ERR("Error: fail while trying to open framebuffer.");
 	else
 		TDM_INFO("framebuffer device has been successfully opened.");
+
+	TDM_DBG("module:%p, fb_dev:%p", module, hwc_manager->fb_dev);
 }
 
 static int
@@ -360,6 +442,10 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 	hwc_manager->height = values[1];
 #endif
 
+	TDM_DBG("hwc_manager:%p, hwc_module:%p, hwc_dev:%p",
+			hwc_manager, hwc_manager->hwc_module,
+			hwc_manager->hwc_dev);
+
 	return 0;
 
 fail_2:
@@ -430,6 +516,9 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 	}
 #endif
 
+	TDM_DBG("hwc_manager:%p, max_num_outputs:%d, max_num_layers:%d", hwc_manager,
+			hwc_manager->max_num_outputs, hwc_manager->max_num_layers);
+
 	return TDM_ERROR_NONE;
 }
 
@@ -438,6 +527,8 @@ android_hwc_deinit(hwc_manager_t hwc_manager)
 {
 	if (!hwc_manager)
 		return;
+
+	TDM_DBG("hwc_manager:%p", hwc_manager);
 
 	_clean_leayers_list(hwc_manager);
 	hwc_close_1(hwc_manager->hwc_dev);
@@ -462,7 +553,8 @@ android_hwc_vsync_event_control(hwc_manager_t hwc_manager, int output_idx, int s
 		return TDM_ERROR_OPERATION_FAILED;
 	}
 
-	TDM_DBG("VSYNC event delivery was turned %s.", state ? "on" : "off");
+	TDM_DBG("display(%s): VSYNC event delivery was turned %s.",
+			str_display_type[output_idx], state ? "on" : "off");
 
 	return TDM_ERROR_NONE;
 }
@@ -473,12 +565,19 @@ android_hwc_get_max_hw_layers(hwc_manager_t hwc_manager)
 	/* In order to HWC_FRAMEBUFFER_TARGET layer was not ignored by the hwc,
 	 * the layer list must contain at least one HWC_FRAMEBUFFER layer. So we
 	 * create one fake layer which will not be used.*/
+
+	TDM_DBG("hwc_manager:%p, max_num_layers:%d", hwc_manager,
+			hwc_manager->max_num_layers - 1);
+
 	return hwc_manager->max_num_layers - 1;
 }
 
 int
 android_hwc_get_max_num_outputs(hwc_manager_t hwc_manager)
 {
+	TDM_DBG("hwc_manager:%p, max_num_outputs:%d", hwc_manager,
+			hwc_manager->max_num_outputs);
+
 	return hwc_manager->max_num_outputs;
 }
 
@@ -566,7 +665,8 @@ android_hwc_get_output_capabilities(hwc_manager_t hwc_manager, int output_idx,
 		/* flags is the index of display configuration */
 		caps->modes[i].flags = i;
 
-		TDM_DBG("display: %d configuration: %d attributes:", output_idx, i);
+		TDM_DBG("display: %d display_type: %s configuration: %d attributes:",
+				output_idx, str_display_type[output_idx], i);
 		TDM_DBG(" width:  %d", values[0]);
 		TDM_DBG(" heitht: %d", values[1]);
 		TDM_DBG(" vsync period: %f ms", values[2]/1000000.0);
@@ -631,6 +731,11 @@ android_hwc_get_layer_capabilities(hwc_manager_t hwc_manager, int layer_idx, tdm
 	caps->prop_count = 0;
 	caps->props = NULL;
 
+	TDM_DBG("hwc_manager:%p, layer_idx:%d, format_count:%d, prop_count:%d, "
+			"zpos:%d, capabilities:", hwc_manager, layer_idx, caps->format_count,
+			caps->prop_count, caps->zpos);
+	_tdm_dbg_layer_capability(caps->capabilities);
+
 	return TDM_ERROR_NONE;
 }
 
@@ -650,6 +755,17 @@ android_hwc_layer_set_info(hwc_manager_t hwc_manager, int output_idx, int layer_
 	curr_layer->displayFrame.top = info->dst_pos.y;
 	curr_layer->displayFrame.right = info->dst_pos.x + info->dst_pos.w;
 	curr_layer->displayFrame.bottom = info->dst_pos.y + info->dst_pos.h;
+
+	TDM_DBG("hwc_manager:%p, output_idx:%d, display_type:%s, layer_idx:%d\n"
+			"	sourceCropf.left:%f\n	sourceCropf.top:%f\n"
+			"	sourceCropf.right:%f\n	sourceCropf.bottom:%f\n"
+			"	displayFrame.left:%d\n	displayFrame.top:%d\n"
+			"	displayFrame.right:%d\n	displayFrame.bottom:%d\n",
+			hwc_manager, output_idx, str_display_type[output_idx], layer_idx,
+			curr_layer->sourceCropf.left, curr_layer->sourceCropf.top,
+			curr_layer->sourceCropf.right, curr_layer->sourceCropf.bottom,
+			curr_layer->displayFrame.left, curr_layer->displayFrame.top,
+			curr_layer->displayFrame.right, curr_layer->displayFrame.bottom);
 }
 
 void
@@ -660,6 +776,10 @@ android_hwc_layer_set_buff(hwc_manager_t hwc_manager, int output_idx, int layer_
 	curr_layer = &hwc_manager->disps_list[output_idx]->hwLayers[layer_idx];
 
 	curr_layer->handle = buff;
+
+	TDM_DBG("hwc_manager:%p, output_idx:%d, display_type:%s, layer_idx:%d, "
+			"handle:%p", hwc_manager, output_idx, str_display_type[output_idx],
+			layer_idx, curr_layer->handle);
 }
 
 void
@@ -670,6 +790,9 @@ android_hwc_layer_unset_buff(hwc_manager_t hwc_manager, int output_idx, int laye
 	curr_layer = &hwc_manager->disps_list[output_idx]->hwLayers[layer_idx];
 
 	curr_layer->handle = NULL;
+
+	TDM_DBG("hwc_manager:%p, output_idx:%d, display_type:%s, layer_idx:%d,",
+			hwc_manager, output_idx, str_display_type[output_idx], layer_idx);
 }
 
 void
@@ -680,6 +803,10 @@ android_hwc_output_set_commit_handler(hwc_manager_t hwc_manager, int output_idx,
 	hwc_manager->commit_hndl = hndl;
 
 	pthread_mutex_unlock(&hwc_manager->hwc_mutex);
+
+	TDM_DBG("hwc_manager:%p, output_idx:%d, display_type:%s, commit_hndl:%p",
+			hwc_manager, output_idx, str_display_type[output_idx],
+			hwc_manager->commit_hndl);
 }
 
 tdm_error
@@ -777,6 +904,11 @@ android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, t
 
 	pthread_mutex_unlock(&hwc_manager->hwc_mutex);
 
+	TDM_DBG("hwc_manager:%p, output_idx:%d, display_type:%s, sync:%d, output:%p, "
+			"user_data:%p, display_contents:%p, num_hw_layers:%d",
+			hwc_manager, output_idx, str_display_type[output_idx], sync, output,
+			user_data, hwc_manager->disps_list[output_idx], num_hw_layers);
+
 	return TDM_ERROR_NONE;
 }
 
@@ -798,6 +930,9 @@ android_hwc_output_set_mode(hwc_manager_t hwc_manager, int output_idx,
 			return TDM_ERROR_OPERATION_FAILED;
 		}
 	}
+
+	TDM_DBG("hwc_manager:%p, output_idx:%d, display_type:%s, mode_idx:%d",
+			hwc_manager, output_idx, str_display_type[output_idx], mode_idx);
 
 	return TDM_ERROR_NONE;
 }
@@ -859,6 +994,10 @@ android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
 	default:
 		return TDM_ERROR_INVALID_PARAMETER;
 	}
+
+	TDM_DBG("hwc_manager:%p, output_idx:%d, display_type:%s, dpms_value:%s",
+			hwc_manager, output_idx, str_display_type[output_idx],
+			tdm_output_dpms_to_str(dpms_value));
 
 	return TDM_ERROR_NONE;
 

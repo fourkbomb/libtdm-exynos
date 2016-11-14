@@ -25,6 +25,12 @@
 #include "tdm_android_output.h"
 #include "tdm_android_layer.h"
 
+extern char *str_display_type[];
+extern char *str_composit_type[];
+
+char *tdm_output_dpms_to_str(tdm_output_dpms dpms);
+void _tdm_dbg_layer_capability(tdm_layer_capability capa);
+
 /* android backend functions */
 tdm_error    android_display_get_capabilitiy(tdm_backend_data *bdata, tdm_caps_display *caps);
 tdm_output** android_display_get_outputs(tdm_backend_data *bdata, int *count, tdm_error *error);

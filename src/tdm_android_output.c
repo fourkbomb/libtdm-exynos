@@ -18,6 +18,8 @@ tdm_android_output_destroy_layer_list(tdm_android_output_data *output_data)
 	}
 
 	LIST_FOR_EACH_ENTRY_SAFE(l, ll, &output_data->layer_list, link) {
+		TDM_DBG("output:%p, layer_list:%p, layer:%p", output_data,
+				&output_data->layer_list, l);
 		LIST_DEL(&l->link);
 		free(l);
 	}
@@ -54,6 +56,9 @@ _tdm_android_output_create_layer_list(tdm_android_output_data *output_data)
 		else
 			layer_data->layer_idx = i;
 		layer_data->output = output_data;
+
+		TDM_DBG("output:%p, layer:%p, layer_idx:%d", output_data, layer_data,
+				layer_data->layer_idx);
 
 		LIST_ADDTAIL(&layer_data->link, &output_data->layer_list);
 	}
@@ -137,6 +142,9 @@ android_output_get_layers(tdm_output *output,  int *count, tdm_error *error)
 
 	if (error)
 		*error = TDM_ERROR_NONE;
+
+	TDM_DBG("output:%p, output_type:%s, layers:%p, num_layers:%d", output,
+			str_display_type[output_data->otput_idx], layers, *count);
 
 	return layers;
 failed_get:
@@ -231,6 +239,10 @@ android_output_get_dpms(tdm_output *output, tdm_output_dpms *dpms_value)
 
 	*dpms_value = output_data->dpms_value;
 
+	TDM_DBG("output:%p, display_type:%s, dpms_value", output,
+			str_display_type[output_data->otput_idx],
+			tdm_output_dpms_to_str(*dpms_value));
+
 	return TDM_ERROR_NONE;
 }
 
@@ -265,6 +277,9 @@ android_output_get_mode(tdm_output *output, const tdm_output_mode **mode)
 	RETURN_VAL_IF_FAIL(mode, TDM_ERROR_INVALID_PARAMETER);
 
 	*mode = output_data->current_mode;
+
+	TDM_DBG("output:%p, display_type:%s, current_mode:%p",
+			output,str_display_type[output_data->otput_idx], *mode);
 
 	return TDM_ERROR_NONE;
 }

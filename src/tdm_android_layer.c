@@ -69,6 +69,8 @@ android_layer_get_info(tdm_layer *layer, tdm_info_layer *info)
 
 	*info = layer_data->info;
 
+	TDM_DBG("layer:%p, info:%p", layer_data, info);
+
 	return TDM_ERROR_NONE;
 }
 

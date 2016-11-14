@@ -21,6 +21,8 @@ tdm_android_display_destroy_output_list(tdm_android_data *android_data)
 		return;
 
 	LIST_FOR_EACH_ENTRY_SAFE(o, oo, &android_data->output_list, link) {
+		TDM_DBG("data:%p, output_list:%p, output:%p",
+				android_data, &android_data->output_list, o);
 		LIST_DEL(&o->link);
 		tdm_android_output_destroy_layer_list(o);
 		free(o);
@@ -57,7 +59,9 @@ tdm_android_display_create_output_list(tdm_android_data *android_data)
 
 		LIST_INITHEAD(&output_data->layer_list);
 
-		TDM_DBG("output(%d) display_type(%d)", i, i);
+		TDM_DBG("output:%p, otput_idx:d, display_type:%s, dpms_value:%s",
+				output_data, i, str_display_type[i],
+				tdm_output_dpms_to_str(output_data->dpms_value));
 
 		LIST_ADDTAIL(&output_data->link, &android_data->output_list);
 	}
@@ -144,6 +148,8 @@ android_display_get_outputs(tdm_backend_data *bdata, int *count,
 
 	if (error)
 		*error = TDM_ERROR_NONE;
+
+	TDM_DBG("outputs:%p, count:%d", outputs, *count);
 
 	return outputs;
 failed_get:
