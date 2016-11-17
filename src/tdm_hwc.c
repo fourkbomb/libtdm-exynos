@@ -388,7 +388,6 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 	 * of course if it exists on the platform. */
 	_unprepare_fb_device(hwc_manager);
 
-#ifndef QCOM_BSP
 	TDM_DBG("turn on a screen...");
 	if ((hwc_manager->hwc_dev->common.version & 0xFFFF0000) >= 0x1040000) {
 		res = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
@@ -400,7 +399,6 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 	if (res) {
 		TDM_DBG("warning: cannot turn on a screen, obviously it has been turned on already.");
 	}
-#endif
 
 	TDM_INFO("hwc version: %x.", hwc_manager->hwc_dev->common.version & 0xFFFF0000);
 	TDM_INFO("hwc module api version: %hu.", hwc_manager->hwc_dev->common.module->module_api_version);
@@ -491,18 +489,8 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 		return TDM_ERROR_OPERATION_FAILED;
 	}
 
-	/* turn on vsync event delivery */
-	ret = android_hwc_vsync_event_control(hwc_manager, HWC_DISPLAY_PRIMARY, 1);
-	if (ret) {
-		_clean_leayers_list(hwc_manager);
-		hwc_close_1(hwc_manager->hwc_dev);
-		free(hwc_manager);
-		return TDM_ERROR_OPERATION_FAILED;
-	}
-
 	*hwc_manager_ = hwc_manager;
 
-#ifndef QCOM_BSP
 	/* tdm requires set_dpms with TDM_OUTPUT_DPMS_ON arg to be called before commit call,
 	 * so we can turn off screen here, it will be turned on request from set_dpms function */
 	TDM_INFO("turn off a screen...");
@@ -514,7 +502,6 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 	} else {
 		hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, HWC_DISPLAY_PRIMARY, 1);
 	}
-#endif
 
 	TDM_DBG("hwc_manager:%p, max_num_outputs:%d, max_num_layers:%d", hwc_manager,
 			hwc_manager->max_num_outputs, hwc_manager->max_num_layers);
@@ -954,11 +941,19 @@ android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
 													 HWC_POWER_MODE_NORMAL);
 			if (ret)
 				goto fail;
-			break;
+		} else {
+			ret = hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, output_idx, 0);
+			if (ret)
+				goto fail;
 		}
-		ret = hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, output_idx, 0);
+
+		/* turn on vsync event delivery */
+		ret = android_hwc_vsync_event_control(hwc_manager, output_idx, 1);
 		if (ret)
-			goto fail;
+			if (ret)
+				TDM_WRN("Failed turn on vsync event delivery. The commit "
+						"handler callback will not be called.");
+
 		break;
 	case TDM_OUTPUT_DPMS_STANDBY:
 		if (hwc_version >= 0x1040000) {
@@ -986,10 +981,17 @@ android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
 			if (ret)
 				goto fail;
 			break;
+		} else {
+			ret = hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, output_idx, 1);
+			if (ret)
+				goto fail;
 		}
-		ret = hwc_manager->hwc_dev->blank(hwc_manager->hwc_dev, output_idx, 1);
+
+		/* turn off vsync event delivery */
+		ret = android_hwc_vsync_event_control(hwc_manager, output_idx, 0);
 		if (ret)
-			goto fail;
+			if (ret)
+				TDM_WRN("Failed turn off vsync event delivery.");
 		break;
 	default:
 		return TDM_ERROR_INVALID_PARAMETER;
