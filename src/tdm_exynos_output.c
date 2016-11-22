@@ -594,6 +594,12 @@ exynos_output_get_capability(tdm_output *output, tdm_caps_output *caps)
 	caps->subpixel = connector->subpixel;
 	caps->preferred_align = -1;
 
+	caps->cursor_min_w = 32;
+	caps->cursor_min_h = 32;
+	caps->cursor_max_w = -1;
+	caps->cursor_max_h = -1;
+	caps->cursor_preferred_align = -1;
+
 	crtc = drmModeGetCrtc(exynos_data->drm_fd, output_data->crtc_id);
 	if (!crtc) {
 		ret = TDM_ERROR_OPERATION_FAILED;

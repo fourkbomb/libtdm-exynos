@@ -417,7 +417,7 @@ failed:
 tdm_backend_module tdm_backend_module_data = {
 	"exynos",
 	"Samsung",
-	TDM_BACKEND_ABI_VERSION,
+	TDM_BACKEND_SET_ABI_VERSION(1, 5),
 	tdm_exynos_init,
 	tdm_exynos_deinit
 };
