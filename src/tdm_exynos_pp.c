@@ -293,6 +293,8 @@ tdm_exynos_pp_get_capability(tdm_exynos_data *exynos_data, tdm_caps_pp *caps)
 	caps->max_h = -1;
 	caps->preferred_align = 16;
 
+	caps->max_attach_count = -1;
+
 	return TDM_ERROR_NONE;
 }
 
