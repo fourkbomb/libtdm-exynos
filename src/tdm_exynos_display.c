@@ -639,6 +639,12 @@ exynos_display_get_pp_capability(tdm_backend_data *bdata, tdm_caps_pp *caps)
 	return tdm_exynos_pp_get_capability(bdata, caps);
 }
 
+tdm_error
+exynos_display_get_capture_capability(tdm_backend_data *bdata, tdm_caps_capture *caps)
+{
+	return tdm_exynos_capture_get_capability(bdata, caps);
+}
+
 tdm_output **
 exynos_display_get_outputs(tdm_backend_data *bdata, int *count,
 								 tdm_error *error)

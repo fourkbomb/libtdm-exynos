@@ -55,6 +55,12 @@
 #define ALIGN_TO_8KB(x)    ((((x) + (1 << 13) - 1) >> 13) << 13)
 #define ALIGN_TO_64KB(x)   ((((x) + (1 << 16) - 1) >> 16) << 16)
 
+#define RETURN_IF_FAIL(cond) { \
+	if (!(cond)) { \
+		TDM_ERR("'%s' failed", #cond); \
+		return; \
+	} \
+}
 #define RETURN_VAL_IF_FAIL(cond, val) { \
 	if (!(cond)) { \
 		TDM_ERR("'%s' failed", #cond); \

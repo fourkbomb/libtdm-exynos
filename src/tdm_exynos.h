@@ -21,6 +21,7 @@
 #include <tdm_backend.h>
 #include <tdm_log.h>
 #include <tdm_list.h>
+#include <tdm_helper.h>
 
 #include "tdm_exynos_types.h"
 #include "tdm_exynos_format.h"
@@ -28,12 +29,14 @@
 #include "tdm_exynos_output.h"
 #include "tdm_exynos_layer.h"
 #include "tdm_exynos_pp.h"
+#include "tdm_exynos_capture.h"
 
 extern unsigned int exynos_screen_prerotation_hint;
 
 /* exynos backend functions */
 tdm_error    exynos_display_get_capability(tdm_backend_data *bdata, tdm_caps_display *caps);
 tdm_error    exynos_display_get_pp_capability(tdm_backend_data *bdata, tdm_caps_pp *caps);
+tdm_error    exynos_display_get_capture_capability(tdm_backend_data *bdata, tdm_caps_capture *caps);
 tdm_output** exynos_display_get_outputs(tdm_backend_data *bdata, int *count, tdm_error *error);
 tdm_error    exynos_display_get_fd(tdm_backend_data *bdata, int *fd);
 tdm_error    exynos_display_handle_events(tdm_backend_data *bdata);
@@ -50,6 +53,7 @@ tdm_error    exynos_output_set_dpms(tdm_output *output, tdm_output_dpms dpms_val
 tdm_error    exynos_output_get_dpms(tdm_output *output, tdm_output_dpms *dpms_value);
 tdm_error    exynos_output_set_mode(tdm_output *output, const tdm_output_mode *mode);
 tdm_error    exynos_output_get_mode(tdm_output *output, const tdm_output_mode **mode);
+tdm_capture* exynos_output_create_capture(tdm_output *output, tdm_error *error);
 tdm_error    exynos_output_set_status_handler(tdm_output *output, tdm_output_status_handler func, void *user_data);
 tdm_error    exynos_layer_get_capability(tdm_layer *layer, tdm_caps_layer *caps);
 tdm_error    exynos_layer_set_property(tdm_layer *layer, unsigned int id, tdm_value value);
@@ -63,5 +67,10 @@ tdm_error    exynos_pp_set_info(tdm_pp *pp, tdm_info_pp *info);
 tdm_error    exynos_pp_attach(tdm_pp *pp, tbm_surface_h src, tbm_surface_h dst);
 tdm_error    exynos_pp_commit(tdm_pp *pp);
 tdm_error    exynos_pp_set_done_handler(tdm_pp *pp, tdm_pp_done_handler func, void *user_data);
+void         exynos_capture_destroy(tdm_capture *capture);
+tdm_error    exynos_capture_set_info(tdm_capture *capture, tdm_info_capture *info);
+tdm_error    exynos_capture_attach(tdm_capture *capture, tbm_surface_h buffer);
+tdm_error    exynos_capture_commit(tdm_capture *capture);
+tdm_error    exynos_capture_set_done_handler(tdm_pp *pp, tdm_capture_done_handler func, void *user_data);
 
 #endif /* _TDM_EXYNOS_H_ */

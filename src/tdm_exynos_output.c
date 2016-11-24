@@ -318,7 +318,7 @@ _tdm_exynos_output_commit_primary_layer(tdm_exynos_layer_data *layer_data,
 			if (output_data->status == TDM_OUTPUT_CONN_STATUS_MODE_SETTED)
 				tdm_exynos_output_update_status(output_data, TDM_OUTPUT_CONN_STATUS_CONNECTED);
 
-			*do_waitvblank = 1;
+			*do_waitvblank = 0;
 		} else {
 			tbm_surface_info_s info;
 			int ret;
@@ -951,6 +951,19 @@ exynos_output_get_mode(tdm_output *output, const tdm_output_mode **mode)
 	*mode = output_data->current_mode;
 
 	return TDM_ERROR_NONE;
+}
+
+tdm_capture*
+exynos_output_create_capture(tdm_output *output, tdm_error *error)
+{
+	tdm_exynos_output_data *output_data = output;
+	tdm_exynos_data *exynos_data;
+
+	RETURN_VAL_IF_FAIL(output_data, NULL);
+
+	exynos_data = output_data->exynos_data;
+
+	return tdm_exynos_capture_create_output(exynos_data, output, error);
 }
 
 tdm_error

@@ -197,8 +197,12 @@ _tdm_exynos_drm_user_handler(struct drm_event *event)
 
 	ipp = (struct drm_exynos_ipp_event *)event;
 
-	tdm_exynos_pp_handler(ipp->prop_id, ipp->buf_id, ipp->tv_sec, ipp->tv_usec,
-						  (void *)(unsigned long)ipp->user_data);
+	if (tdm_exynos_capture_find_prop_id(ipp->prop_id))
+		tdm_exynos_capture_stream_pp_handler(ipp->prop_id, ipp->buf_id, ipp->tv_sec, ipp->tv_usec,
+											 (void *)(unsigned long)ipp->user_data);
+	else
+		tdm_exynos_pp_handler(ipp->prop_id, ipp->buf_id, ipp->tv_sec, ipp->tv_usec,
+							  (void *)(unsigned long)ipp->user_data);
 
 	return 0;
 }
@@ -237,6 +241,7 @@ tdm_exynos_init(tdm_display *dpy, tdm_error *error)
 	tdm_func_output exynos_func_output;
 	tdm_func_layer exynos_func_layer;
 	tdm_func_pp exynos_func_pp;
+	tdm_func_capture exynos_func_capture;
 	tdm_error ret;
 	const char *value;
 
@@ -275,6 +280,7 @@ tdm_exynos_init(tdm_display *dpy, tdm_error *error)
 	memset(&exynos_func_display, 0, sizeof(exynos_func_display));
 	exynos_func_display.display_get_capability = exynos_display_get_capability;
 	exynos_func_display.display_get_pp_capability = exynos_display_get_pp_capability;
+	exynos_func_display.display_get_capture_capability = exynos_display_get_capture_capability;
 	exynos_func_display.display_get_outputs = exynos_display_get_outputs;
 	exynos_func_display.display_get_fd = exynos_display_get_fd;
 	exynos_func_display.display_handle_events = exynos_display_handle_events;
@@ -293,6 +299,7 @@ tdm_exynos_init(tdm_display *dpy, tdm_error *error)
 	exynos_func_output.output_get_dpms = exynos_output_get_dpms;
 	exynos_func_output.output_set_mode = exynos_output_set_mode;
 	exynos_func_output.output_get_mode = exynos_output_get_mode;
+	exynos_func_output.output_create_capture = exynos_output_create_capture;
 #ifdef HAVE_UDEV
 	exynos_func_output.output_set_status_handler = exynos_output_set_status_handler;
 #endif
@@ -313,6 +320,13 @@ tdm_exynos_init(tdm_display *dpy, tdm_error *error)
 	exynos_func_pp.pp_commit = exynos_pp_commit;
 	exynos_func_pp.pp_set_done_handler = exynos_pp_set_done_handler;
 
+	memset(&exynos_func_capture, 0, sizeof(exynos_func_capture));
+	exynos_func_capture.capture_destroy = exynos_capture_destroy;
+	exynos_func_capture.capture_set_info = exynos_capture_set_info;
+	exynos_func_capture.capture_attach = exynos_capture_attach;
+	exynos_func_capture.capture_commit = exynos_capture_commit;
+	exynos_func_capture.capture_set_done_handler = exynos_capture_set_done_handler;
+
 	ret = tdm_backend_register_func_display(dpy, &exynos_func_display);
 	if (ret != TDM_ERROR_NONE)
 		goto failed;
@@ -326,6 +340,10 @@ tdm_exynos_init(tdm_display *dpy, tdm_error *error)
 		goto failed;
 
 	ret = tdm_backend_register_func_pp(dpy, &exynos_func_pp);
+	if (ret != TDM_ERROR_NONE)
+		goto failed;
+
+	ret = tdm_backend_register_func_capture(dpy, &exynos_func_capture);
 	if (ret != TDM_ERROR_NONE)
 		goto failed;
 
