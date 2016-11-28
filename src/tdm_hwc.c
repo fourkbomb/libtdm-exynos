@@ -87,6 +87,18 @@ struct _hwc_manager
 #endif
 };
 
+static uint32_t hwc_api_version(const hwc_composer_device_1_t* hwc)
+{
+	uint32_t hwc_version = hwc->common.version;
+
+	return hwc_version & HARDWARE_API_VERSION_2_MAJ_MIN_MASK;
+}
+
+static int hwc_has_api_version(const hwc_composer_device_1_t* hwc, uint32_t version)
+{
+	return hwc_api_version(hwc) >= (version & HARDWARE_API_VERSION_2_MAJ_MIN_MASK);
+}
+
 static void
 _clean_leayers_list(hwc_manager_t hwc_manager)
 {
@@ -389,7 +401,7 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 	_unprepare_fb_device(hwc_manager);
 
 	TDM_DBG("turn on a screen...");
-	if ((hwc_manager->hwc_dev->common.version & 0xFFFF0000) >= 0x1040000) {
+	if (hwc_has_api_version(hwc_manager->hwc_dev, HWC_DEVICE_API_VERSION_1_4)) {
 		res = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
 												 HWC_DISPLAY_PRIMARY,
 												 HWC_POWER_MODE_NORMAL);
@@ -400,7 +412,9 @@ _prepare_hwc_device(hwc_manager_t hwc_manager)
 		TDM_DBG("warning: cannot turn on a screen, obviously it has been turned on already.");
 	}
 
-	TDM_INFO("hwc version: %x.", hwc_manager->hwc_dev->common.version & 0xFFFF0000);
+	TDM_INFO("hwc version: %u.%u.",
+			 (hwc_api_version(hwc_manager->hwc_dev) >> 24) & 0xff,
+			 (hwc_api_version(hwc_manager->hwc_dev) >> 16) & 0xff);
 	TDM_INFO("hwc module api version: %hu.", hwc_manager->hwc_dev->common.module->module_api_version);
 
 	/* always turn vsync off when we start */
@@ -494,8 +508,8 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 	/* tdm requires set_dpms with TDM_OUTPUT_DPMS_ON arg to be called before commit call,
 	 * so we can turn off screen here, it will be turned on request from set_dpms function */
 	TDM_INFO("turn off a screen...");
-	uint32_t hwc_version = hwc_manager->hwc_dev->common.version & 0xFFFF0000;
-	if (hwc_version >= 0x1040000) {
+
+	if (hwc_has_api_version(hwc_manager->hwc_dev, HWC_DEVICE_API_VERSION_1_4)) {
 		hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
 										   HWC_DISPLAY_PRIMARY,
 										   HWC_POWER_MODE_OFF);
@@ -904,11 +918,8 @@ android_hwc_output_set_mode(hwc_manager_t hwc_manager, int output_idx,
 							unsigned int mode_idx)
 {
 	int res;
-	uint32_t hwc_version;
 
-	hwc_version = hwc_manager->hwc_dev->common.version & 0xFFFF0000;
-
-	if (hwc_version >= 0x1040000) {
+	if (hwc_has_api_version(hwc_manager->hwc_dev, HWC_DEVICE_API_VERSION_1_4)) {
 		res = hwc_manager->hwc_dev->setActiveConfig(hwc_manager->hwc_dev,
 													output_idx,
 													mode_idx);
@@ -929,13 +940,10 @@ android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
 							tdm_output_dpms dpms_value)
 {
 	int ret;
-	uint32_t hwc_version;
-
-	hwc_version = hwc_manager->hwc_dev->common.version & 0xFFFF0000;
 
 	switch (dpms_value) {
 	case TDM_OUTPUT_DPMS_ON:
-		if (hwc_version >= 0x1040000) {
+		if (hwc_has_api_version(hwc_manager->hwc_dev, HWC_DEVICE_API_VERSION_1_4)) {
 			ret = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
 													 output_idx,
 													 HWC_POWER_MODE_NORMAL);
@@ -956,7 +964,7 @@ android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
 
 		break;
 	case TDM_OUTPUT_DPMS_STANDBY:
-		if (hwc_version >= 0x1040000) {
+		if (hwc_has_api_version(hwc_manager->hwc_dev, HWC_DEVICE_API_VERSION_1_4)) {
 			ret = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
 													 output_idx,
 													 HWC_POWER_MODE_DOZE);
@@ -965,7 +973,7 @@ android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
 			break;
 		}
 	case TDM_OUTPUT_DPMS_SUSPEND:
-		if (hwc_version >= 0x1040000) {
+		if (hwc_has_api_version(hwc_manager->hwc_dev, HWC_DEVICE_API_VERSION_1_4)) {
 			ret = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
 													 output_idx,
 													 HWC_POWER_MODE_DOZE_SUSPEND);
@@ -974,7 +982,7 @@ android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
 			break;
 		}
 	case TDM_OUTPUT_DPMS_OFF:
-		if (hwc_version >= 0x1040000) {
+		if (hwc_has_api_version(hwc_manager->hwc_dev, HWC_DEVICE_API_VERSION_1_4)) {
 			ret = hwc_manager->hwc_dev->setPowerMode(hwc_manager->hwc_dev,
 													 output_idx,
 													 HWC_POWER_MODE_OFF);
