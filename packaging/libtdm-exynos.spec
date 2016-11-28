@@ -1,5 +1,5 @@
 Name:           libtdm-exynos
-Version:        1.0.3
+Version:        1.0.4
 Release:        0
 Summary:        Tizen Display Manager Exynos Back-End Library
 Group:          Development/Libraries
