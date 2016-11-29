@@ -34,4 +34,6 @@ tdm_error
 android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
 							tdm_output_dpms dpms_value);
 
+int android_hwc_layer_map_index(hwc_manager_t hwc_manager, int index);
+
 #endif /* _TDM_HWC_H_ */

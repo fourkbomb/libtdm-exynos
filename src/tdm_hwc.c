@@ -8,10 +8,10 @@
 #include <hardware/fb.h>	/* Note: some devices may insist that the FB HAL be opened before HWC */
 #include <sync/sync.h>
 #include <stdbool.h>
+#include <cutils/properties.h>
 
 #include "tdm_hwc.h"
 
-#define MAX_HW_LAYERS (3)
 #define INCHES_TO_MM (25.4)
 #define MAX_NUM_CONFIGS (32)
 #define MAX_NUM_OUTPUTS (1)
@@ -60,6 +60,9 @@ struct _hwc_manager
 
 	int max_num_outputs;
 	int max_num_layers;
+	/* amount of overlay layers, excluding primary layer, the backend provides
+	 * for tdm's user*/
+	int max_num_overlay_layers;
 
 	/* to synchronize page-flip scheduling with vblank handling */
 	pthread_mutex_t hwc_mutex;
@@ -86,6 +89,16 @@ struct _hwc_manager
 	int height;
 #endif
 };
+
+static inline int max(int a, int b)
+{
+	return (a > b) ? a : b;
+}
+
+static inline int min(int a, int b)
+{
+	return (a < b) ? a : b;
+}
 
 static uint32_t hwc_api_version(const hwc_composer_device_1_t* hwc)
 {
@@ -476,6 +489,8 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 {
 	hwc_manager_t hwc_manager;
 	int ret;
+	char property[PROPERTY_VALUE_MAX];
+	int num_fake_layers, val;
 
 	hwc_manager = calloc(1, sizeof(struct _hwc_manager));
 	if (!hwc_manager)
@@ -489,11 +504,47 @@ android_hwc_init(hwc_manager_t *hwc_manager_)
 	}
 
 	hwc_manager->max_num_outputs = MAX_NUM_OUTPUTS;
-	hwc_manager->max_num_layers = MAX_HW_LAYERS;
 
 	ret = _prepare_hwc_device(hwc_manager);
 	if (ret)
 		return TDM_ERROR_OPERATION_FAILED;
+
+	/* in order to HWC_FRAMEBUFFER_TARGET layer was not ignored by the hwc,
+	 * the layer list must contain at least one HWC_FRAMEBUFFER layer. So we
+	 * create one fake layer which will not be used.
+	 * max_num_layers = num_overlay_layers + num_fake_layers + 1(primary layer)*/
+	if (hwc_has_api_version(hwc_manager->hwc_dev, HWC_DEVICE_API_VERSION_1_4)) {
+
+		/* according to the hwcomposer implementation */
+		if((property_get("persist.hwc.mdpcomp.enable", property, NULL) > 0) &&
+			(!strncmp(property, "1", PROPERTY_VALUE_MAX ) ||
+			(!strncasecmp(property,"true", PROPERTY_VALUE_MAX )))) {
+			/* according to the hwcomposer implementation max number overlay
+			 * layers is 4. 1 layers we are using as HWC_FRAMEBUFFER_TARGET/primary
+			 * other as HWC_OVERLAY. */
+			hwc_manager->max_num_overlay_layers = 3;
+		}
+
+		/* get the set value of the maximum number of overlay layers
+		 * (including HWC_FRAMEBUFFER_TARGET/primary) */
+		if(property_get("debug.mdpcomp.maxpermixer", property, "-1") > 0) {
+			val = atoi(property);
+			if(val > 0)
+				/* val - 1 because val includes HWC_FRAMEBUFFER_TARGET/primary layer*/
+				hwc_manager->max_num_overlay_layers =
+							min(val - 1, hwc_manager->max_num_overlay_layers);
+		}
+
+		/* to mark layers as overlay, we need fake layers same number as overlay
+		 * layer */
+		num_fake_layers = max(2 * hwc_manager->max_num_overlay_layers, 1);
+
+		hwc_manager->max_num_layers = hwc_manager->max_num_overlay_layers +
+															num_fake_layers + 1;
+	} else {
+		hwc_manager->max_num_overlay_layers = 1;
+		hwc_manager->max_num_layers = hwc_manager->max_num_overlay_layers + 1 + 1;
+	}
 
 	/* prepare MAX_HW_LAYERS layers for each display */
 	ret = _prepare_displays_content(hwc_manager);
@@ -563,14 +614,13 @@ android_hwc_vsync_event_control(hwc_manager_t hwc_manager, int output_idx, int s
 int
 android_hwc_get_max_hw_layers(hwc_manager_t hwc_manager)
 {
-	/* In order to HWC_FRAMEBUFFER_TARGET layer was not ignored by the hwc,
-	 * the layer list must contain at least one HWC_FRAMEBUFFER layer. So we
-	 * create one fake layer which will not be used.*/
+	int max_num_layers;
 
-	TDM_DBG("hwc_manager:%p, max_num_layers:%d", hwc_manager,
-			hwc_manager->max_num_layers - 1);
+	max_num_layers = hwc_manager->max_num_overlay_layers + 1;
 
-	return hwc_manager->max_num_layers - 1;
+	TDM_DBG("hwc_manager:%p, max_num_layers:%d", hwc_manager, max_num_layers);
+
+	return max_num_layers;
 }
 
 int
@@ -713,7 +763,7 @@ android_hwc_get_layer_capabilities(hwc_manager_t hwc_manager, int layer_idx, tdm
 
 	if (layer_idx == (hwc_manager->max_num_layers - 1)) {
 		caps->capabilities = TDM_LAYER_CAPABILITY_PRIMARY | TDM_LAYER_CAPABILITY_GRAPHIC;
-		caps->zpos = layer_idx - 1;
+		caps->zpos = hwc_manager->max_num_overlay_layers;
 	} else {
 		caps->capabilities = TDM_LAYER_CAPABILITY_OVERLAY | TDM_LAYER_CAPABILITY_GRAPHIC;
 		caps->zpos = layer_idx;
@@ -878,7 +928,7 @@ android_hwc_output_commit(hwc_manager_t hwc_manager, int output_idx, int sync, t
 	}
 
 	num_hw_layers = hwc_manager->disps_list[output_idx]->numHwLayers;
-	for (i = 0; i < (num_hw_layers - 2); ++i) {
+	for (i = 0; i < hwc_manager->max_num_overlay_layers; ++i) {
 		layer = &hwc_manager->disps_list[output_idx]->hwLayers[i];
 		if (layer->compositionType != HWC_OVERLAY) {
 			if (layer->handle)
@@ -1014,4 +1064,16 @@ android_hwc_output_set_dpms(hwc_manager_t hwc_manager, int output_idx,
 fail:
 	TDM_ERR("Error: cannot set the display screen power state.");
 	return TDM_ERROR_OPERATION_FAILED;
+}
+
+int android_hwc_layer_map_index(hwc_manager_t hwc_manager, int index)
+{
+	if (index >= hwc_manager->max_num_overlay_layers) {
+		/* because the layer with index max_num_overlay_layers is the fake layer,
+		 * and the layer with index max_num_layers is the
+		 * primary(HWC_FRAMEBUFFER_TARGET) layer */
+		return hwc_manager->max_num_layers - 1;
+	}
+
+	return index;
 }
