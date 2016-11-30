@@ -50,7 +50,7 @@ static struct list_head capture_list;
 int
 tdm_exynos_capture_find_prop_id(unsigned int prop_id)
 {
-	tdm_exynos_capture_data *capture_data;
+	tdm_exynos_capture_data *capture_data = NULL;
 
 	if (!capture_list_init) {
 		capture_list_init = 1;
