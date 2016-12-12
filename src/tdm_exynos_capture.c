@@ -406,19 +406,26 @@ _tdm_exynos_capture_oneshot_composite_layers_sw(tdm_exynos_capture_data *capture
 	LIST_FOR_EACH_ENTRY(layer_data, &output_data->layer_list, link) {
 		tbm_surface_h buf;
 		tdm_pos dst_pos;
+		tdm_transform transform = TDM_TRANSFORM_NORMAL;
 
 		if (!layer_data->display_buffer)
 			continue;
 
 		buf = layer_data->display_buffer->buffer;
-		dst_pos = layer_data->info.dst_pos;
 
-		_tdm_exynos_capture_oneshot_rect_scale(output_data->current_mode->hdisplay,
-											   output_data->current_mode->vdisplay,
-											   buf_info.width, buf_info.height, &dst_pos);
+		if (capture_data->info.dst_config.pos.w == 0 ||
+			capture_data->info.dst_config.pos.h == 0) {
+			dst_pos = layer_data->info.dst_pos;
+			_tdm_exynos_capture_oneshot_rect_scale(output_data->current_mode->hdisplay,
+												   output_data->current_mode->vdisplay,
+												   buf_info.width, buf_info.height, &dst_pos);
 
+		} else {
+			dst_pos = capture_data->info.dst_config.pos;
+			transform = capture_data->info.transform;
+		}
 		tdm_helper_convert_buffer(buf, buffer,
-								  &layer_data->info.src_config.pos, &dst_pos, 0, 1);
+								  &layer_data->info.src_config.pos, &dst_pos, transform, 1);
 	}
 }
 
